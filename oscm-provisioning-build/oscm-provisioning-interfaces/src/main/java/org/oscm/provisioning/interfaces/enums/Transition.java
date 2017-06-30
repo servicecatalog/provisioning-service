@@ -17,7 +17,8 @@ import org.oscm.common.interfaces.keys.TransitionKey;
  * backend will use these references for de-/serialization and validation.
  */
 public enum Transition implements TransitionKey {
-    TRANSITION("transition", Entity.SAMPLE, Entity.SAMPLE);
+    PROVISION("provision", Entity.SUBSCRIPTION, Entity.RELEASE), //
+    UPDATE("update", Entity.RELEASE, Entity.RELEASE); //
 
     private String name;
     private EntityKey inputEntity;

@@ -15,9 +15,10 @@ import org.oscm.common.interfaces.keys.ApplicationKey;
  * this application interacts with (including itself).
  */
 public enum Application implements ApplicationKey {
-    SAMPLE("sample");
+    PROVISIONING("provisioning"), //
+    OSCM_CORE("core"); //
 
-    public static final Application SELF = SAMPLE;
+    public static final Application SELF = PROVISIONING;
 
     private String name;
 

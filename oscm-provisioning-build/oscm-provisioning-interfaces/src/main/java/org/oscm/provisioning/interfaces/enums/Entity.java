@@ -11,20 +11,26 @@ package org.oscm.provisioning.interfaces.enums;
 import org.oscm.common.interfaces.data.Event;
 import org.oscm.common.interfaces.keys.ApplicationKey;
 import org.oscm.common.interfaces.keys.EntityKey;
-import org.oscm.provisioning.interfaces.data.Sample;
+import org.oscm.provisioning.interfaces.data.Release;
+import org.oscm.provisioning.interfaces.data.Subscription;
 
 /**
- * Enum for entity keys. Represents entities that this application interacts with.
+ * Enum for entity keys. Represents entities that this application interacts
+ * with.
  */
 public enum Entity implements EntityKey {
-    SAMPLE("sample", Sample.class);
+    SUBSCRIPTION("subscription", Subscription.class, Application.OSCM_CORE), //
+    RELEASE("release", Release.class, Application.SELF); //
 
     private String name;
     private Class<? extends Event> clazz;
+    private ApplicationKey application;
 
-    private Entity(String name, Class<? extends Event> clazz) {
+    private Entity(String name, Class<? extends Event> clazz,
+            ApplicationKey application) {
         this.name = name;
         this.clazz = clazz;
+        this.application = application;
     }
 
     @Override
@@ -39,7 +45,7 @@ public enum Entity implements EntityKey {
 
     @Override
     public ApplicationKey getApplication() {
-        return Application.SELF;
+        return application;
     }
 
 }

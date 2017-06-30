@@ -22,15 +22,7 @@ import org.oscm.common.interfaces.keys.VersionKey;
  */
 public enum Activity implements ActivityKey {
 
-    SAMPLE_READ("read-sample", Entity.SAMPLE, Entity.SAMPLE, Type.QUERY), //
-    SAMPLE_READ_BY_NAME("read-sample-by-name", Entity.SAMPLE, Entity.SAMPLE,
-            Type.QUERY), //
-    SAMPLE_READ_ALL("read-all-samples", Entity.SAMPLE, Entity.SAMPLE,
-            Type.QUERY), //
-
-    SAMPLE_CREATE("create-sample", Entity.SAMPLE, Entity.SAMPLE, Type.COMMAND), //
-    SAMPLE_UPDATE("update-sample", Entity.SAMPLE, Entity.SAMPLE, Type.COMMAND), //
-    SAMPLE_DELETE("delete-sample", Entity.SAMPLE, Entity.SAMPLE, Type.COMMAND); //
+    ; //
 
     private String name;
     private EntityKey inputEntity;
