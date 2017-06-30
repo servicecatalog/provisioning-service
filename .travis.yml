@@ -1,0 +1,14 @@
+language: java
+jdk: oraclejdk8
+
+install:
+  - git clone --depth=1 --branch=master https://github.com/servicecatalog/service-tools.git servicecatalog/service-tools
+  - cd servicecatalog/service-tools
+  - mvn install -f ./oscm-common-build/pom.xml
+  - cd ../..
+
+script:
+  - mvn install cobertura:cobertura -f ./oscm-provisioning-build/pom.xml
+
+after_success:
+  - bash <(curl -s https://codecov.io/bash)
