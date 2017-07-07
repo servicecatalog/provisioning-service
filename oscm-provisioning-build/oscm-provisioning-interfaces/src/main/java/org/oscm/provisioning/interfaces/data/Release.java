@@ -22,8 +22,8 @@ import com.google.gson.annotations.SerializedName;
  */
 public class Release extends Event {
 
-    public static final String FIELD_RELEASE_REFERENCE = "release_ref";
     public static final String FIELD_STATUS = "status";
+    public static final String FIELD_INSTANCE = "instance";
     public static final String FIELD_SERVICES = "services";
 
     public static final String OPTION_PENDING = "pending";
@@ -45,22 +45,14 @@ public class Release extends Event {
         FAILED //
     }
 
-    @SerializedName(FIELD_RELEASE_REFERENCE)
-    private String releaseReference;
-
     @SerializedName(FIELD_STATUS)
     private Status status;
 
+    @SerializedName(FIELD_INSTANCE)
+    private String instance;
+
     @SerializedName(FIELD_SERVICES)
     private Map<String, String> services;
-
-    public String getReleaseReference() {
-        return releaseReference;
-    }
-
-    public void setReleaseReference(String releaseReference) {
-        this.releaseReference = releaseReference;
-    }
 
     public Status getStatus() {
         return status;
@@ -68,6 +60,14 @@ public class Release extends Event {
 
     public void setStatus(Status status) {
         this.status = status;
+    }
+
+    public String getInstance() {
+        return instance;
+    }
+
+    public void setInstance(String instance) {
+        this.instance = instance;
     }
 
     public Map<String, String> getServices() {

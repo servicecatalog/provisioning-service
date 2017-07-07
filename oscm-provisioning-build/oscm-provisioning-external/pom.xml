@@ -1,6 +1,4 @@
-<?xml version="1.0" encoding="UTF-8"?>
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
-  
   <parent>
     <groupId>org.oscm.provisioning</groupId>
     <artifactId>oscm-provisioning-build</artifactId>
@@ -8,33 +6,33 @@
   </parent>
   
   <modelVersion>4.0.0</modelVersion>
-  <artifactId>oscm-provisioning-services</artifactId>
+  <artifactId>oscm-provisioning-external</artifactId>
   <packaging>jar</packaging>
-  
+
   <name>${project.artifactId}-${project.version}</name>
   <url>https://github.com/servicecatalog</url>
-  
+
   <dependencies>
-   
+  
+    <dependency>
+      <groupId>org.oscm.common</groupId>
+      <artifactId>oscm-common-interfaces</artifactId>
+      <version>${tools.version}</version>
+    </dependency>
+    
     <dependency>
       <groupId>org.oscm.common</groupId>
       <artifactId>oscm-common-util</artifactId>
       <version>${tools.version}</version>
     </dependency>
-   
-    <dependency>
-      <groupId>org.oscm.provisioning</groupId>
-      <artifactId>oscm-provisioning-interfaces</artifactId>
-      <version>${project.parent.version}</version>
-    </dependency>
     
     <dependency>
-      <groupId>org.oscm.provisioning</groupId>
-      <artifactId>oscm-provisioning-external</artifactId>
-      <version>${project.parent.version}</version>
+      <groupId>org.oscm.common</groupId>
+      <artifactId>oscm-common-jersey</artifactId>
+      <version>${tools.version}</version>
     </dependency>
     
     <!-- Third party libraries -->
-
+  
   </dependencies>
 </project>

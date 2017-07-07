@@ -6,6 +6,13 @@
   <version>0.0.1-SNAPSHOT</version>
   <packaging>pom</packaging>
   
+  <modules>
+    <module>oscm-provisioning-interfaces</module>
+    <module>oscm-provisioning-services</module>
+    <module>oscm-provisioning-external</module>
+    <module>oscm-provisioning-main</module>
+  </modules>
+  
   <properties>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     <tools.version>0.0.1-SNAPSHOT</tools.version>
@@ -56,9 +63,4 @@
     </dependency>
   
   </dependencies>
-  <modules>
-    <module>oscm-provisioning-interfaces</module>
-    <module>oscm-provisioning-services</module>
-    <module>oscm-provisioning-main</module>
-  </modules>
 </project>

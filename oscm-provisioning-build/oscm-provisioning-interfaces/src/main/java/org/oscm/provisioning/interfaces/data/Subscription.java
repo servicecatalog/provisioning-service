@@ -23,15 +23,58 @@ import com.google.gson.annotations.SerializedName;
 public class Subscription extends Event {
 
     public static final String FIELD_TARGET = "target";
+    public static final String FIELD_NAMESPACE = "nameplace";
     public static final String FIELD_TEMPLATE = "template";
+    public static final String FIELD_REPOSITORY = "repository";
+    public static final String FIELD_NAME = "name";
+    public static final String FIELD_VERSION = "version";
     public static final String FIELD_LABELS = "labels";
     public static final String FIELD_PARAMETERS = "parameters";
+
+    public static class Template {
+
+        @SerializedName(FIELD_REPOSITORY)
+        private String repository;
+
+        @SerializedName(FIELD_NAME)
+        private String name;
+
+        @SerializedName(FIELD_VERSION)
+        private String version;
+
+        public String getRepository() {
+            return repository;
+        }
+
+        public void setRepository(String repository) {
+            this.repository = repository;
+        }
+
+        public String getName() {
+            return name;
+        }
+
+        public void setName(String name) {
+            this.name = name;
+        }
+
+        public String getVersion() {
+            return version;
+        }
+
+        public void setVersion(String version) {
+            this.version = version;
+        }
+    }
 
     @SerializedName(FIELD_TARGET)
     private String target;
 
+    @SerializedName(FIELD_NAMESPACE)
+    private String namespace;
+
     @SerializedName(FIELD_TEMPLATE)
-    private String template;
+    private Template template;
 
     @SerializedName(FIELD_LABELS)
     private Map<String, String> labels;
@@ -47,11 +90,19 @@ public class Subscription extends Event {
         this.target = target;
     }
 
-    public String getTemplate() {
+    public String getNamespace() {
+        return namespace;
+    }
+
+    public void setNamespace(String namespace) {
+        this.namespace = namespace;
+    }
+
+    public Template getTemplate() {
         return template;
     }
 
-    public void setTemplate(String template) {
+    public void setTemplate(Template template) {
         this.template = template;
     }
 
