@@ -8,10 +8,10 @@
 
 package org.oscm.provisioning.interfaces.enums;
 
+import org.oscm.common.interfaces.data.Version;
 import org.oscm.common.interfaces.keys.ActivityKey;
 import org.oscm.common.interfaces.keys.ApplicationKey;
 import org.oscm.common.interfaces.keys.EntityKey;
-import org.oscm.common.interfaces.keys.VersionKey;
 
 /**
  * Enum for activity keys. Represents all commands and queries that this
@@ -63,12 +63,12 @@ public enum Activity implements ActivityKey {
     }
 
     @Override
-    public VersionKey getSince() {
-        return Version.V_1_0_0;
+    public Version getSince() {
+        return new Version(1, 0, 0);
     }
 
     @Override
-    public VersionKey getUntil() {
-        return Version.LATEST;
+    public Version getUntil() {
+        return Config.LATEST_VERSION;
     }
 }

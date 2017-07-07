@@ -12,11 +12,13 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
+import org.oscm.common.interfaces.data.Version;
 import org.oscm.common.interfaces.keys.ConfigurationKey;
-import org.oscm.common.kafka.EventStream;
-import org.oscm.common.kafka.EventTable;
+import org.oscm.common.kafka.EntityTable;
 import org.oscm.common.kafka.KafkaConfig;
 import org.oscm.common.kafka.Stream;
+import org.oscm.common.kafka.TimedStream;
+import org.oscm.common.kafka.TransitionStream;
 import org.oscm.common.util.ApplicationServer;
 import org.oscm.common.util.ConfigurationManager;
 import org.oscm.common.util.ServiceManager;
@@ -24,9 +26,9 @@ import org.oscm.provisioning.interfaces.data.Release;
 import org.oscm.provisioning.interfaces.data.Subscription;
 import org.oscm.provisioning.interfaces.enums.Activity;
 import org.oscm.provisioning.interfaces.enums.Application;
+import org.oscm.provisioning.interfaces.enums.Config;
 import org.oscm.provisioning.interfaces.enums.Entity;
 import org.oscm.provisioning.interfaces.enums.Transition;
-import org.oscm.provisioning.interfaces.enums.Version;
 import org.oscm.provisioning.services.ProvisionService;
 import org.oscm.provisioning.services.UpdateService;
 
@@ -55,24 +57,28 @@ public class ProvisioningApplicationServer extends ApplicationServer {
         // manager
         List<ConfigurationKey> keys = new ArrayList<>();
         keys.addAll(Arrays.asList(KafkaConfig.values()));
+        keys.addAll(Arrays.asList(Config.values()));
 
         ConfigurationManager.init(importer, Application.SELF, Activity.values(),
-                Version.values(), Version.LATEST, Version.V_1_0_0,
+                Config.LATEST_VERSION, new Version(1, 0, 0),
                 keys.toArray(new ConfigurationKey[] {}));
 
         // Initialize kafka streams
-        EventTable<Subscription> subscriptionTable = new EventTable<>(
+        EntityTable<Subscription> subscriptionTable = new EntityTable<>(
                 Entity.SUBSCRIPTION);
-        EventTable<Release> releaseTable = new EventTable<>(Entity.RELEASE);
+        EntityTable<Release> releaseTable = new EntityTable<>(Entity.RELEASE);
 
-        EventStream provisionStream = new EventStream(Transition.PROVISION);
-        EventStream updateStream = new EventStream(Transition.UPDATE);
+        TransitionStream provisionStream = new TransitionStream(
+                Transition.PROVISION);
+        TimedStream updateStream = new TimedStream(Transition.UPDATE, 10000); // ms
+        TimedStream monitorStream = new TimedStream(Transition.MONITOR, 600000); // ms
 
         streams = new ArrayList<>();
         streams.add(subscriptionTable);
         streams.add(releaseTable);
         streams.add(provisionStream);
         streams.add(updateStream);
+        streams.add(monitorStream);
 
         // register services and their supplier in the service manager
         ServiceManager sm = ServiceManager.getInstance();
@@ -85,6 +91,8 @@ public class ProvisioningApplicationServer extends ApplicationServer {
         sm.setTransitionService(Transition.PROVISION,
                 new ProvisionService()::provision);
         sm.setTransitionService(Transition.UPDATE, new UpdateService()::update);
+        sm.setTransitionService(Transition.MONITOR,
+                new UpdateService()::monitor);
 
         // startup streams
         streams.forEach((s) -> s.start());
