@@ -18,6 +18,7 @@ import org.oscm.common.interfaces.keys.TransitionKey;
  */
 public enum Transition implements TransitionKey {
     PROVISION("provision", Entity.SUBSCRIPTION, Entity.RELEASE), //
+    EXECUTE("execute", Entity.RELEASE, Entity.RELEASE), //
     UPDATE("update", Entity.RELEASE, Entity.RELEASE), //
     MONITOR("monitor", Entity.RELEASE, Entity.RELEASE); //
 

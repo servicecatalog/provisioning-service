@@ -26,12 +26,24 @@ public class Release extends Event {
     public static final String FIELD_INSTANCE = "instance";
     public static final String FIELD_SERVICES = "services";
 
+    public static final String OPTION_CREATNG = "creating";
+    public static final String OPTION_UPDATING = "updating";
+    public static final String OPTION_DELETING = "deleting";
     public static final String OPTION_PENDING = "pending";
     public static final String OPTION_DEPLOYED = "deployed";
     public static final String OPTION_DELETED = "deleted";
     public static final String OPTION_FAILED = "failed";
 
     public enum Status {
+        @SerializedName(OPTION_CREATNG)
+        CREATING, //
+
+        @SerializedName(OPTION_UPDATING)
+        UPDATING, //
+
+        @SerializedName(OPTION_DELETING)
+        DELETING, //
+
         @SerializedName(OPTION_PENDING)
         PENDING, //
 

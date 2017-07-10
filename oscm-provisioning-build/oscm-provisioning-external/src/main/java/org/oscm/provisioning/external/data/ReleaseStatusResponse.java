@@ -12,6 +12,6 @@ package org.oscm.provisioning.external.data;
  * @author miethaner
  *
  */
-public class StatusReleaseResponse {
+public class ReleaseStatusResponse {
 
 }

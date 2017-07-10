@@ -29,8 +29,8 @@ import org.oscm.provisioning.interfaces.enums.Application;
 import org.oscm.provisioning.interfaces.enums.Config;
 import org.oscm.provisioning.interfaces.enums.Entity;
 import org.oscm.provisioning.interfaces.enums.Transition;
-import org.oscm.provisioning.services.ProvisionService;
-import org.oscm.provisioning.services.UpdateService;
+import org.oscm.provisioning.services.ReleaseService;
+import org.oscm.provisioning.services.SubscriptionService;
 
 /**
  * Startup class to orchestrate the application and its technologies.
@@ -70,6 +70,8 @@ public class ProvisioningApplicationServer extends ApplicationServer {
 
         TransitionStream provisionStream = new TransitionStream(
                 Transition.PROVISION);
+        TransitionStream executeStream = new TransitionStream(
+                Transition.EXECUTE);
         TimedStream updateStream = new TimedStream(Transition.UPDATE, 10000); // ms
         TimedStream monitorStream = new TimedStream(Transition.MONITOR, 600000); // ms
 
@@ -77,6 +79,7 @@ public class ProvisioningApplicationServer extends ApplicationServer {
         streams.add(subscriptionTable);
         streams.add(releaseTable);
         streams.add(provisionStream);
+        streams.add(executeStream);
         streams.add(updateStream);
         streams.add(monitorStream);
 
@@ -89,10 +92,13 @@ public class ProvisioningApplicationServer extends ApplicationServer {
 
         // Service classes
         sm.setTransitionService(Transition.PROVISION,
-                new ProvisionService()::provision);
-        sm.setTransitionService(Transition.UPDATE, new UpdateService()::update);
+                new SubscriptionService()::provision);
+        sm.setTransitionService(Transition.EXECUTE,
+                new ReleaseService()::execute);
+        sm.setTransitionService(Transition.UPDATE,
+                new ReleaseService()::update);
         sm.setTransitionService(Transition.MONITOR,
-                new UpdateService()::monitor);
+                new ReleaseService()::monitor);
 
         // startup streams
         streams.forEach((s) -> s.start());

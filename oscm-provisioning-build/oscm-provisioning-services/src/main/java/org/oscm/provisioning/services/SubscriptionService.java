@@ -9,47 +9,67 @@
 package org.oscm.provisioning.services;
 
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 
 import org.oscm.common.interfaces.data.Event;
 import org.oscm.common.interfaces.enums.Operation;
+import org.oscm.common.interfaces.events.EventSource;
 import org.oscm.common.interfaces.exceptions.ServiceException;
-import org.oscm.provisioning.external.RudderClient;
-import org.oscm.provisioning.external.data.InstallReleaseRequest;
+import org.oscm.common.util.ServiceManager;
 import org.oscm.provisioning.interfaces.data.Release;
 import org.oscm.provisioning.interfaces.data.Release.Status;
 import org.oscm.provisioning.interfaces.data.Subscription;
+import org.oscm.provisioning.interfaces.enums.Entity;
 
 /**
  * @author miethaner
  *
  */
-public class ProvisionService {
+public class SubscriptionService {
 
+    @SuppressWarnings("unused")
     public List<Event> provision(Event event) throws ServiceException {
 
         Subscription sub = Subscription.class.cast(event);
 
-        RudderClient client = new RudderClient(sub.getTarget());
+        EventSource<Release> source = ServiceManager.getInstance()
+                .getEventSource(Entity.RELEASE);
 
-        InstallReleaseRequest request = new InstallReleaseRequest();
-        request.setName(sub.getId().toString());
-        request.setNamespace(sub.getNamespace());
-        request.setRepository(sub.getTemplate().getRepository());
-        request.setChart(sub.getTemplate().getName());
-        request.setVersion(sub.getTemplate().getVersion());
-        request.setValues(sub.getParameters());
-
-        client.installRelease(request);
+        Release old = source.get(sub.getId());
 
         Release release = new Release();
-
         release.setId(sub.getId());
         release.setETag(sub.getETag());
-        release.setOperation(Operation.UPDATE);
-        release.setStatus(Status.PENDING);
 
-        return Arrays.asList(release);
+        if (sub.getOperation() == Operation.UPDATE
+                && (old == null || !old.getETag().equals(sub.getETag()))) {
+
+            release.setOperation(Operation.UPDATE);
+            release.setStatus(Status.CREATING);
+
+            return Arrays.asList(release);
+        }
+
+        if (sub.getOperation() == Operation.UPDATE && old != null
+                && !old.getETag().equals(sub.getETag())) {
+
+            release.setOperation(Operation.UPDATE);
+            release.setStatus(Status.UPDATING);
+
+            return Arrays.asList(release);
+        }
+
+        if (sub.getOperation() == Operation.DELETE && old != null
+                && old.getOperation() != Operation.DELETE) {
+
+            release.setOperation(Operation.UPDATE);
+            release.setStatus(Status.DELETING);
+
+            return Arrays.asList(release);
+        }
+
+        return Collections.emptyList();
     }
 
 }
