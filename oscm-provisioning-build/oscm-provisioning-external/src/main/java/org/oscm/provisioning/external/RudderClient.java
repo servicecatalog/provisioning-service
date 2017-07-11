@@ -27,7 +27,7 @@ public class RudderClient {
     private static final String PATH_UPDATE = "/api/v%d/releases";
     private static final String PATH_STATUS = "/api/v%d/releases/%s/status";
 
-    private static final Integer API_VERSION = new Integer(1);
+    private static final Integer API_VERSION = Integer.valueOf(1);
 
     private RestClient client;
 
