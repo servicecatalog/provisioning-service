@@ -16,7 +16,8 @@ import org.oscm.common.interfaces.keys.ConfigurationKey;
  *
  */
 public enum Config implements ConfigurationKey {
-    ;
+    JERSEY_RUDDER_SIGNING_CERT("jwt-rudder-signing-cert", false,
+            "/opt/cert/rudder.pem"); //
 
     public static final Version LATEST_VERSION = new Version(1, 0, 0);
 

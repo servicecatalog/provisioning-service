@@ -87,18 +87,18 @@ public class ProvisioningApplicationServer extends ApplicationServer {
         ServiceManager sm = ServiceManager.getInstance();
 
         // Event classes
-        sm.setEventSource(Entity.SUBSCRIPTION, subscriptionTable);
-        sm.setEventSource(Entity.RELEASE, releaseTable);
+        sm.setEventSource(Entity.SUBSCRIPTION, () -> subscriptionTable);
+        sm.setEventSource(Entity.RELEASE, () -> releaseTable);
 
         // Service classes
         sm.setTransitionService(Transition.PROVISION,
-                new SubscriptionService()::provision);
+                () -> new SubscriptionService()::provision);
         sm.setTransitionService(Transition.EXECUTE,
-                new ReleaseService()::execute);
+                () -> new ReleaseService()::execute);
         sm.setTransitionService(Transition.UPDATE,
-                new ReleaseService()::update);
+                () -> new ReleaseService()::update);
         sm.setTransitionService(Transition.MONITOR,
-                new ReleaseService()::monitor);
+                () -> new ReleaseService()::monitor);
 
         // startup streams
         streams.forEach((s) -> s.start());

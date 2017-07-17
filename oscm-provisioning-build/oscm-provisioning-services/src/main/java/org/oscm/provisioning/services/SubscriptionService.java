@@ -11,6 +11,7 @@ package org.oscm.provisioning.services;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
+import java.util.UUID;
 
 import org.oscm.common.interfaces.data.Event;
 import org.oscm.common.interfaces.enums.Operation;
@@ -42,11 +43,11 @@ public class SubscriptionService {
         release.setId(sub.getId());
         release.setETag(sub.getETag());
 
-        if (sub.getOperation() == Operation.UPDATE
-                && (old == null || !old.getETag().equals(sub.getETag()))) {
+        if (sub.getOperation() == Operation.UPDATE && old == null) {
 
             release.setOperation(Operation.UPDATE);
             release.setStatus(Status.CREATING);
+            release.setInstance(UUID.randomUUID().toString());
 
             return Arrays.asList(release);
         }

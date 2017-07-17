@@ -16,7 +16,7 @@ import com.google.gson.annotations.SerializedName;
  * @author miethaner
  *
  */
-public class ReleaseRequest {
+public class InstallReleaseRequest {
 
     public static final String FIELD_NAME = "name";
     public static final String FIELD_NAMESPACE = "namespace";

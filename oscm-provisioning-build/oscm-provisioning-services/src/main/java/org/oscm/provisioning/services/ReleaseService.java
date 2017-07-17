@@ -14,11 +14,10 @@ import java.util.List;
 
 import org.oscm.common.interfaces.data.Event;
 import org.oscm.common.interfaces.events.EventSource;
+import org.oscm.common.interfaces.exceptions.ConnectionException;
 import org.oscm.common.interfaces.exceptions.ServiceException;
 import org.oscm.common.util.ServiceManager;
 import org.oscm.provisioning.external.RudderClient;
-import org.oscm.provisioning.external.data.ReleaseRequest;
-import org.oscm.provisioning.external.data.ReleaseStatusResponse;
 import org.oscm.provisioning.interfaces.data.Release;
 import org.oscm.provisioning.interfaces.data.Release.Status;
 import org.oscm.provisioning.interfaces.data.Subscription;
@@ -34,21 +33,35 @@ public class ReleaseService {
 
         Release release = Release.class.cast(event);
 
-        switch (release.getStatus()) {
-        case CREATING:
-            installRelease(release);
-            break;
+        EventSource<Subscription> source = ServiceManager.getInstance()
+                .getEventSource(Entity.SUBSCRIPTION);
 
-        case UPDATING:
-            updateRelease(release);
-            break;
+        Subscription sub = source.get(release.getId());
 
-        case DELETING:
-            uninstallRelease(release);
-            break;
+        RudderClient client = new RudderClient(sub.getTarget());
 
-        default:
-            return Collections.emptyList();
+        try {
+            switch (release.getStatus()) {
+            case CREATING:
+                client.installRelease(sub, release);
+                break;
+
+            case UPDATING:
+                client.updateRelease(sub, release);
+                break;
+
+            case DELETING:
+                client.uninstallRelease(release);
+                break;
+
+            default:
+                return Collections.emptyList();
+            }
+        } catch (ConnectionException e) {
+            release.setStatus(Status.FAILED);
+            release.setFailure(e.getAsFailure());
+
+            return Arrays.asList(release);
         }
 
         release.setStatus(Status.PENDING);
@@ -64,10 +77,24 @@ public class ReleaseService {
             return null;
         }
 
-        ReleaseStatusResponse response = releaseStatus(release);
+        EventSource<Subscription> source = ServiceManager.getInstance()
+                .getEventSource(Entity.SUBSCRIPTION);
 
-        if (response == null) { // TODO use real response
-            release.setStatus(Status.DEPLOYED);
+        Subscription sub = source.get(release.getId());
+
+        try {
+            RudderClient client = new RudderClient(sub.getTarget());
+
+            client.releaseStatus(release);
+
+            if (release.getStatus() != Status.PENDING) {
+
+                return Arrays.asList(release);
+            }
+
+        } catch (ConnectionException e) {
+            release.setStatus(Status.FAILED);
+            release.setFailure(e.getAsFailure());
 
             return Arrays.asList(release);
         }
@@ -83,76 +110,27 @@ public class ReleaseService {
             return null;
         }
 
-        ReleaseStatusResponse response = releaseStatus(release);
+        EventSource<Subscription> source = ServiceManager.getInstance()
+                .getEventSource(Entity.SUBSCRIPTION);
 
-        if (response == null) { // TODO use real response
+        Subscription sub = source.get(release.getId());
+
+        try {
+            RudderClient client = new RudderClient(sub.getTarget());
+
+            client.releaseStatus(release);
+
+            if (release.getStatus() != Status.DEPLOYED) {
+
+                return Arrays.asList(release);
+            }
+        } catch (ConnectionException e) {
             release.setStatus(Status.FAILED);
+            release.setFailure(e.getAsFailure());
 
             return Arrays.asList(release);
         }
 
         return Collections.emptyList();
-    }
-
-    private void installRelease(Release release) throws ServiceException {
-        EventSource<Subscription> source = ServiceManager.getInstance()
-                .getEventSource(Entity.SUBSCRIPTION);
-
-        Subscription sub = source.get(release.getId());
-
-        RudderClient client = new RudderClient(sub.getTarget());
-
-        ReleaseRequest request = new ReleaseRequest();
-        request.setName(sub.getId().toString());
-        request.setNamespace(sub.getNamespace());
-        request.setRepository(sub.getTemplate().getRepository());
-        request.setChart(sub.getTemplate().getName());
-        request.setVersion(sub.getTemplate().getVersion());
-        request.setValues(sub.getParameters());
-
-        client.installRelease(request);
-    }
-
-    private void uninstallRelease(Release release) throws ServiceException {
-        EventSource<Subscription> source = ServiceManager.getInstance()
-                .getEventSource(Entity.SUBSCRIPTION);
-
-        Subscription sub = source.get(release.getId());
-
-        RudderClient client = new RudderClient(sub.getTarget());
-
-        client.uninstallRelease(release.getInstance());
-    }
-
-    private void updateRelease(Release release) throws ServiceException {
-        EventSource<Subscription> source = ServiceManager.getInstance()
-                .getEventSource(Entity.SUBSCRIPTION);
-
-        Subscription sub = source.get(release.getId());
-
-        RudderClient client = new RudderClient(sub.getTarget());
-
-        ReleaseRequest request = new ReleaseRequest();
-        request.setName(sub.getId().toString());
-        request.setNamespace(sub.getNamespace());
-        request.setRepository(sub.getTemplate().getRepository());
-        request.setChart(sub.getTemplate().getName());
-        request.setVersion(sub.getTemplate().getVersion());
-        request.setValues(sub.getParameters());
-
-        client.updateRelease(request);
-    }
-
-    private ReleaseStatusResponse releaseStatus(Release release)
-            throws ServiceException {
-
-        EventSource<Subscription> source = ServiceManager.getInstance()
-                .getEventSource(Entity.SUBSCRIPTION);
-
-        Subscription sub = source.get(release.getId());
-
-        RudderClient client = new RudderClient(sub.getTarget());
-
-        return client.releaseStatus(release.getInstance());
     }
 }

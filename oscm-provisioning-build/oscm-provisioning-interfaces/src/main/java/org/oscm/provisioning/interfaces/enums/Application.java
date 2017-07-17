@@ -15,20 +15,28 @@ import org.oscm.common.interfaces.keys.ApplicationKey;
  * this application interacts with (including itself).
  */
 public enum Application implements ApplicationKey {
-    PROVISIONING("provisioning"), //
-    OSCM_CORE("core"); //
+    PROVISIONING("provisioning", Type.INTERNAL), //
+    OSCM_CORE("core", Type.INTERNAL), //
+    RUDDER("rudder", Type.EXTERNAL); //
 
     public static final Application SELF = PROVISIONING;
 
     private String name;
+    private Type type;
 
-    private Application(String name) {
+    private Application(String name, Type type) {
         this.name = name;
+        this.type = type;
     }
 
     @Override
     public String getApplicationName() {
         return name;
+    }
+
+    @Override
+    public Type getType() {
+        return type;
     }
 
 }

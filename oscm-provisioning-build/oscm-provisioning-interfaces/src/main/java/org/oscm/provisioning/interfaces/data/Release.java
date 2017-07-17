@@ -11,6 +11,7 @@ package org.oscm.provisioning.interfaces.data;
 import java.util.Map;
 
 import org.oscm.common.interfaces.data.Event;
+import org.oscm.common.interfaces.data.Failure;
 import org.oscm.common.interfaces.exceptions.ServiceException;
 import org.oscm.common.interfaces.keys.ActivityKey;
 
@@ -23,6 +24,7 @@ import com.google.gson.annotations.SerializedName;
 public class Release extends Event {
 
     public static final String FIELD_STATUS = "status";
+    public static final String FIELD_FAILURE = "failure";
     public static final String FIELD_INSTANCE = "instance";
     public static final String FIELD_SERVICES = "services";
 
@@ -60,6 +62,9 @@ public class Release extends Event {
     @SerializedName(FIELD_STATUS)
     private Status status;
 
+    @SerializedName(FIELD_FAILURE)
+    private Failure failure;
+
     @SerializedName(FIELD_INSTANCE)
     private String instance;
 
@@ -72,6 +77,14 @@ public class Release extends Event {
 
     public void setStatus(Status status) {
         this.status = status;
+    }
+
+    public Failure getFailure() {
+        return failure;
+    }
+
+    public void setFailure(Failure failure) {
+        this.failure = failure;
     }
 
     public String getInstance() {

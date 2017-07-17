@@ -32,6 +32,11 @@
       <version>${tools.version}</version>
     </dependency>
     
+    <dependency>
+      <groupId>org.oscm.provisioning</groupId>
+      <artifactId>oscm-provisioning-interfaces</artifactId>
+      <version>${project.parent.version}</version>
+    </dependency>
     <!-- Third party libraries -->
   
   </dependencies>
