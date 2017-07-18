@@ -27,6 +27,10 @@ public class Release extends Event {
     public static final String FIELD_FAILURE = "failure";
     public static final String FIELD_INSTANCE = "instance";
     public static final String FIELD_SERVICES = "services";
+    public static final String FIELD_TARGET = "target";
+    public static final String FIELD_NAMESPACE = "namespace";
+    public static final String FIELD_TEMPLATE = "template";
+    public static final String FIELD_PARAMETERS = "parameters";
 
     public static final String OPTION_CREATNG = "creating";
     public static final String OPTION_UPDATING = "updating";
@@ -65,8 +69,20 @@ public class Release extends Event {
     @SerializedName(FIELD_FAILURE)
     private Failure failure;
 
+    @SerializedName(FIELD_TARGET)
+    private String target;
+
+    @SerializedName(FIELD_TEMPLATE)
+    private Template template;
+
+    @SerializedName(FIELD_NAMESPACE)
+    private String namespace;
+
     @SerializedName(FIELD_INSTANCE)
     private String instance;
+
+    @SerializedName(FIELD_PARAMETERS)
+    private Map<String, String> parameters;
 
     @SerializedName(FIELD_SERVICES)
     private Map<String, String> services;
@@ -87,12 +103,44 @@ public class Release extends Event {
         this.failure = failure;
     }
 
+    public String getTarget() {
+        return target;
+    }
+
+    public void setTarget(String target) {
+        this.target = target;
+    }
+
+    public Template getTemplate() {
+        return template;
+    }
+
+    public void setTemplate(Template template) {
+        this.template = template;
+    }
+
+    public String getNamespace() {
+        return namespace;
+    }
+
+    public void setNamespace(String namespace) {
+        this.namespace = namespace;
+    }
+
     public String getInstance() {
         return instance;
     }
 
     public void setInstance(String instance) {
         this.instance = instance;
+    }
+
+    public Map<String, String> getParameters() {
+        return parameters;
+    }
+
+    public void setParameters(Map<String, String> parameters) {
+        this.parameters = parameters;
     }
 
     public Map<String, String> getServices() {

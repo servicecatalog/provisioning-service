@@ -19,11 +19,12 @@ import org.oscm.common.kafka.KafkaConfig;
 import org.oscm.common.kafka.Stream;
 import org.oscm.common.kafka.TimedStream;
 import org.oscm.common.kafka.TransitionStream;
+import org.oscm.common.rest.ClientManager;
+import org.oscm.common.rest.provider.SimpleMessageProvider;
 import org.oscm.common.util.ApplicationServer;
 import org.oscm.common.util.ConfigurationManager;
 import org.oscm.common.util.ServiceManager;
 import org.oscm.provisioning.interfaces.data.Release;
-import org.oscm.provisioning.interfaces.data.Subscription;
 import org.oscm.provisioning.interfaces.enums.Activity;
 import org.oscm.provisioning.interfaces.enums.Application;
 import org.oscm.provisioning.interfaces.enums.Config;
@@ -63,9 +64,12 @@ public class ProvisioningApplicationServer extends ApplicationServer {
                 Config.LATEST_VERSION, new Version(1, 0, 0),
                 keys.toArray(new ConfigurationKey[] {}));
 
+        ClientManager jcm = ClientManager.getInstance();
+
+        jcm.addAuthentication(Application.RUDDER, "admin", "admin123");
+        jcm.addProvider(Application.RUDDER, SimpleMessageProvider.class);
+
         // Initialize kafka streams
-        EntityTable<Subscription> subscriptionTable = new EntityTable<>(
-                Entity.SUBSCRIPTION);
         EntityTable<Release> releaseTable = new EntityTable<>(Entity.RELEASE);
 
         TransitionStream provisionStream = new TransitionStream(
@@ -73,10 +77,9 @@ public class ProvisioningApplicationServer extends ApplicationServer {
         TransitionStream executeStream = new TransitionStream(
                 Transition.EXECUTE);
         TimedStream updateStream = new TimedStream(Transition.UPDATE, 10000); // ms
-        TimedStream monitorStream = new TimedStream(Transition.MONITOR, 600000); // ms
+        TimedStream monitorStream = new TimedStream(Transition.MONITOR, 60000); // ms
 
         streams = new ArrayList<>();
-        streams.add(subscriptionTable);
         streams.add(releaseTable);
         streams.add(provisionStream);
         streams.add(executeStream);
@@ -87,7 +90,6 @@ public class ProvisioningApplicationServer extends ApplicationServer {
         ServiceManager sm = ServiceManager.getInstance();
 
         // Event classes
-        sm.setEventSource(Entity.SUBSCRIPTION, () -> subscriptionTable);
         sm.setEventSource(Entity.RELEASE, () -> releaseTable);
 
         // Service classes

@@ -47,7 +47,7 @@
       <artifactId>oscm-common-kafka</artifactId>
       <version>${tools.version}</version>
     </dependency>
-  
+    
     <dependency>
         <groupId>org.oscm.provisioning</groupId>
         <artifactId>oscm-provisioning-services</artifactId>

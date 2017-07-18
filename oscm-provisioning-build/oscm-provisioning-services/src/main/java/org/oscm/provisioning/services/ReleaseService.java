@@ -13,15 +13,11 @@ import java.util.Collections;
 import java.util.List;
 
 import org.oscm.common.interfaces.data.Event;
-import org.oscm.common.interfaces.events.EventSource;
 import org.oscm.common.interfaces.exceptions.ConnectionException;
 import org.oscm.common.interfaces.exceptions.ServiceException;
-import org.oscm.common.util.ServiceManager;
 import org.oscm.provisioning.external.RudderClient;
 import org.oscm.provisioning.interfaces.data.Release;
 import org.oscm.provisioning.interfaces.data.Release.Status;
-import org.oscm.provisioning.interfaces.data.Subscription;
-import org.oscm.provisioning.interfaces.enums.Entity;
 
 /**
  * @author miethaner
@@ -33,21 +29,16 @@ public class ReleaseService {
 
         Release release = Release.class.cast(event);
 
-        EventSource<Subscription> source = ServiceManager.getInstance()
-                .getEventSource(Entity.SUBSCRIPTION);
-
-        Subscription sub = source.get(release.getId());
-
-        RudderClient client = new RudderClient(sub.getTarget());
+        RudderClient client = new RudderClient(release.getTarget());
 
         try {
             switch (release.getStatus()) {
             case CREATING:
-                client.installRelease(sub, release);
+                client.installRelease(release);
                 break;
 
             case UPDATING:
-                client.updateRelease(sub, release);
+                client.updateRelease(release);
                 break;
 
             case DELETING:
@@ -77,13 +68,8 @@ public class ReleaseService {
             return null;
         }
 
-        EventSource<Subscription> source = ServiceManager.getInstance()
-                .getEventSource(Entity.SUBSCRIPTION);
-
-        Subscription sub = source.get(release.getId());
-
         try {
-            RudderClient client = new RudderClient(sub.getTarget());
+            RudderClient client = new RudderClient(release.getTarget());
 
             client.releaseStatus(release);
 
@@ -110,13 +96,8 @@ public class ReleaseService {
             return null;
         }
 
-        EventSource<Subscription> source = ServiceManager.getInstance()
-                .getEventSource(Entity.SUBSCRIPTION);
-
-        Subscription sub = source.get(release.getId());
-
         try {
-            RudderClient client = new RudderClient(sub.getTarget());
+            RudderClient client = new RudderClient(release.getTarget());
 
             client.releaseStatus(release);
 

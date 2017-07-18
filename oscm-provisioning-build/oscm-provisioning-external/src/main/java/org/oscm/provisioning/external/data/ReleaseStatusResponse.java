@@ -8,8 +8,6 @@
 
 package org.oscm.provisioning.external.data;
 
-import java.util.Date;
-
 import com.google.gson.annotations.SerializedName;
 
 /**
@@ -25,6 +23,8 @@ public class ReleaseStatusResponse {
     public static final String FIELD_FIRST_DEPLOYED = "first_deployed";
     public static final String FIELD_LAST_DEPLOYED = "last_deployed";
     public static final String FIELD_DELETED = "deleted";
+    public static final String FIELD_SECONDS = "seconds";
+    public static final String FIELD_NANOS = "nanos";
     public static final String FIELD_CODE = "code";
     public static final String FIELD_DETAILS = "details";
     public static final String FIELD_RESOURCES = "resource";
@@ -32,23 +32,15 @@ public class ReleaseStatusResponse {
     public static final String FIELD_TYPE_URL = "type_url";
     public static final String FIELD_VALUE = "value";
 
+    public static final int UNKNOWN = 0;
+    public static final int DEPLOYED = 1;
+    public static final int DELETED = 2;
+    public static final int SUPERSEDED = 3;
+    public static final int FAILED = 4;
+
     public static class Info {
 
         public static class Status {
-
-            public enum StatusCode {
-                UNKNOWN(0), DEPLOYED(1), DELETED(2), SUPERSEDED(3), FAILED(4);
-
-                private int value;
-
-                private StatusCode(int value) {
-                    this.value = value;
-                }
-
-                public int getValue() {
-                    return value;
-                }
-            }
 
             public static class Details {
 
@@ -76,7 +68,7 @@ public class ReleaseStatusResponse {
             }
 
             @SerializedName(FIELD_CODE)
-            private StatusCode code;
+            private Integer code;
 
             @SerializedName(FIELD_DETAILS)
             private Details details;
@@ -87,11 +79,11 @@ public class ReleaseStatusResponse {
             @SerializedName(FIELD_NOTES)
             private String notes;
 
-            public StatusCode getCode() {
+            public Integer getCode() {
                 return code;
             }
 
-            public void setCode(StatusCode code) {
+            public void setCode(Integer code) {
                 this.code = code;
             }
 
@@ -120,17 +112,42 @@ public class ReleaseStatusResponse {
             }
         }
 
+        public static class Timestamp {
+
+            @SerializedName(FIELD_SECONDS)
+            private Long seconds;
+
+            @SerializedName(FIELD_NANOS)
+            private Integer nanos;
+
+            public Long getSeconds() {
+                return seconds;
+            }
+
+            public void setSeconds(Long seconds) {
+                this.seconds = seconds;
+            }
+
+            public Integer getNanos() {
+                return nanos;
+            }
+
+            public void setNanos(Integer nanos) {
+                this.nanos = nanos;
+            }
+        }
+
         @SerializedName(FIELD_STATUS)
         private Status status;
 
         @SerializedName(FIELD_FIRST_DEPLOYED)
-        private Date firstDeployed;
+        private Timestamp firstDeployed;
 
         @SerializedName(FIELD_LAST_DEPLOYED)
-        private Date lastDeployed;
+        private Timestamp lastDeployed;
 
         @SerializedName(FIELD_DELETED)
-        private Date deleted;
+        private Timestamp deleted;
 
         public Status getStatus() {
             return status;
@@ -140,27 +157,27 @@ public class ReleaseStatusResponse {
             this.status = status;
         }
 
-        public Date getFirstDeployed() {
+        public Timestamp getFirstDeployed() {
             return firstDeployed;
         }
 
-        public void setFirstDeployed(Date firstDeployed) {
+        public void setFirstDeployed(Timestamp firstDeployed) {
             this.firstDeployed = firstDeployed;
         }
 
-        public Date getLastDeployed() {
+        public Timestamp getLastDeployed() {
             return lastDeployed;
         }
 
-        public void setLastDeployed(Date lastDeployed) {
+        public void setLastDeployed(Timestamp lastDeployed) {
             this.lastDeployed = lastDeployed;
         }
 
-        public Date getDeleted() {
+        public Timestamp getDeleted() {
             return deleted;
         }
 
-        public void setDeleted(Date deleted) {
+        public void setDeleted(Timestamp deleted) {
             this.deleted = deleted;
         }
     }

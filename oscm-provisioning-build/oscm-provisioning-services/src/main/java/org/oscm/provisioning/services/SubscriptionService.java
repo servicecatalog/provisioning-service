@@ -29,6 +29,8 @@ import org.oscm.provisioning.interfaces.enums.Entity;
  */
 public class SubscriptionService {
 
+    private static final String INSTANCE_FORMAT = "oscm-%s";
+
     @SuppressWarnings("unused")
     public List<Event> provision(Event event) throws ServiceException {
 
@@ -41,19 +43,22 @@ public class SubscriptionService {
 
         Release release = new Release();
         release.setId(sub.getId());
-        release.setETag(sub.getETag());
+        release.setTarget(sub.getTarget());
+        release.setTemplate(sub.getTemplate());
+        release.setParameters(sub.getParameters());
 
         if (sub.getOperation() == Operation.UPDATE && old == null) {
 
             release.setOperation(Operation.UPDATE);
             release.setStatus(Status.CREATING);
-            release.setInstance(UUID.randomUUID().toString());
+            release.setInstance(String.format(INSTANCE_FORMAT,
+                    UUID.randomUUID().toString()));
 
             return Arrays.asList(release);
         }
 
         if (sub.getOperation() == Operation.UPDATE && old != null
-                && !old.getETag().equals(sub.getETag())) {
+                && old.getTimestamp().before(sub.getTimestamp())) {
 
             release.setOperation(Operation.UPDATE);
             release.setStatus(Status.UPDATING);
@@ -62,10 +67,22 @@ public class SubscriptionService {
         }
 
         if (sub.getOperation() == Operation.DELETE && old != null
-                && old.getOperation() != Operation.DELETE) {
+                && (old.getStatus() == Status.DEPLOYED
+                        || old.getStatus() == Status.PENDING)) {
 
             release.setOperation(Operation.UPDATE);
             release.setStatus(Status.DELETING);
+
+            return Arrays.asList(release);
+        }
+
+        if (sub.getOperation() == Operation.DELETE && old != null
+                && old.getStatus() != Status.DEPLOYED
+                && old.getStatus() != Status.PENDING
+                && old.getOperation() != Operation.DELETE) {
+
+            release.setOperation(Operation.DELETE);
+            release.setStatus(Status.DELETED);
 
             return Arrays.asList(release);
         }
