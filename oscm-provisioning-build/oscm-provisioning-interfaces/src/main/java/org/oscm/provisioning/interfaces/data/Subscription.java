@@ -23,7 +23,7 @@ import com.google.gson.annotations.SerializedName;
 public class Subscription extends Event {
 
     public static final String FIELD_TARGET = "target";
-    public static final String FIELD_NAMESPACE = "nameplace";
+    public static final String FIELD_NAMESPACE = "namespace";
     public static final String FIELD_TEMPLATE = "template";
     public static final String FIELD_LABELS = "labels";
     public static final String FIELD_PARAMETERS = "parameters";
