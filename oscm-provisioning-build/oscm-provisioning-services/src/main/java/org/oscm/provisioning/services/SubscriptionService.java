@@ -41,14 +41,13 @@ public class SubscriptionService {
 
         Release old = source.get(sub.getId());
 
-        Release release = new Release();
-        release.setId(sub.getId());
-        release.setTarget(sub.getTarget());
-        release.setTemplate(sub.getTemplate());
-        release.setParameters(sub.getParameters());
-
         if (sub.getOperation() == Operation.UPDATE && old == null) {
 
+            Release release = new Release();
+            release.setId(sub.getId());
+            release.setTarget(sub.getTarget());
+            release.setTemplate(sub.getTemplate());
+            release.setParameters(sub.getParameters());
             release.setOperation(Operation.UPDATE);
             release.setStatus(Status.CREATING);
             release.setInstance(String.format(INSTANCE_FORMAT,
@@ -60,20 +59,22 @@ public class SubscriptionService {
         if (sub.getOperation() == Operation.UPDATE && old != null
                 && old.getTimestamp().before(sub.getTimestamp())) {
 
-            release.setOperation(Operation.UPDATE);
-            release.setStatus(Status.UPDATING);
+            old.setTemplate(sub.getTemplate());
+            old.setParameters(sub.getParameters());
+            old.setOperation(Operation.UPDATE);
+            old.setStatus(Status.UPDATING);
 
-            return Arrays.asList(release);
+            return Arrays.asList(old);
         }
 
         if (sub.getOperation() == Operation.DELETE && old != null
                 && (old.getStatus() == Status.DEPLOYED
                         || old.getStatus() == Status.PENDING)) {
 
-            release.setOperation(Operation.UPDATE);
-            release.setStatus(Status.DELETING);
+            old.setOperation(Operation.UPDATE);
+            old.setStatus(Status.DELETING);
 
-            return Arrays.asList(release);
+            return Arrays.asList(old);
         }
 
         if (sub.getOperation() == Operation.DELETE && old != null
@@ -81,10 +82,10 @@ public class SubscriptionService {
                 && old.getStatus() != Status.PENDING
                 && old.getOperation() != Operation.DELETE) {
 
-            release.setOperation(Operation.DELETE);
-            release.setStatus(Status.DELETED);
+            old.setOperation(Operation.DELETE);
+            old.setStatus(Status.DELETED);
 
-            return Arrays.asList(release);
+            return Arrays.asList(old);
         }
 
         return Collections.emptyList();
