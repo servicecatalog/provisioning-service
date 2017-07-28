@@ -41,7 +41,7 @@ public class InstallReleaseRequest {
     private String version;
 
     @SerializedName(FIELD_VALUES)
-    private Map<String, String> values;
+    private Map<String, Object> values;
 
     public String getName() {
         return name;
@@ -83,11 +83,11 @@ public class InstallReleaseRequest {
         this.version = version;
     }
 
-    public Map<String, String> getValues() {
+    public Map<String, Object> getValues() {
         return values;
     }
 
-    public void setValues(Map<String, String> values) {
+    public void setValues(Map<String, Object> values) {
         this.values = values;
     }
 }

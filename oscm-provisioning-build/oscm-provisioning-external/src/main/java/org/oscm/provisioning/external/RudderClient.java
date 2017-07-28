@@ -20,6 +20,7 @@ import org.oscm.common.interfaces.exceptions.ValidationException;
 import org.oscm.common.rest.RestClient;
 import org.oscm.provisioning.external.data.InstallReleaseRequest;
 import org.oscm.provisioning.external.data.ReleaseStatusResponse;
+import org.oscm.provisioning.external.data.UpdateReleaseRequest;
 import org.oscm.provisioning.interfaces.data.Release;
 import org.oscm.provisioning.interfaces.enums.Application;
 
@@ -76,9 +77,8 @@ public class RudderClient {
 
     public void updateRelease(Release release) throws ServiceException {
 
-        InstallReleaseRequest request = new InstallReleaseRequest();
+        UpdateReleaseRequest request = new UpdateReleaseRequest();
         request.setName(release.getInstance());
-        request.setNamespace(release.getNamespace());
         request.setRepository(release.getTemplate().getRepository());
         request.setChart(release.getTemplate().getName());
         request.setVersion(release.getTemplate().getVersion());

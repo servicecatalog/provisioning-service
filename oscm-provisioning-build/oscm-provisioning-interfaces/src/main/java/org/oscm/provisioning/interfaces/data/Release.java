@@ -82,7 +82,7 @@ public class Release extends Event {
     private String instance;
 
     @SerializedName(FIELD_PARAMETERS)
-    private Map<String, String> parameters;
+    private Map<String, Object> parameters;
 
     @SerializedName(FIELD_SERVICES)
     private Map<String, String> services;
@@ -135,11 +135,11 @@ public class Release extends Event {
         this.instance = instance;
     }
 
-    public Map<String, String> getParameters() {
+    public Map<String, Object> getParameters() {
         return parameters;
     }
 
-    public void setParameters(Map<String, String> parameters) {
+    public void setParameters(Map<String, Object> parameters) {
         this.parameters = parameters;
     }
 
