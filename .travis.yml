@@ -2,13 +2,13 @@ language: java
 jdk: oraclejdk8
 
 install:
-  - git clone --depth=1 --branch=master https://github.com/servicecatalog/service-tools.git servicecatalog/service-tools
+  - git clone --depth=1 --branch=lagom https://github.com/servicecatalog/service-tools.git servicecatalog/service-tools
   - cd servicecatalog/service-tools
-  - mvn install -f ./oscm-common-build/pom.xml
+  - mvn install -f ./oscm-lagom/pom.xml
   - cd ../..
 
 script:
-  - mvn install cobertura:cobertura -f ./oscm-provisioning-build/pom.xml
+  - mvn install cobertura:cobertura -f ./oscm-provisioning/pom.xml
 
 after_success:
   - bash <(curl -s https://codecov.io/bash)
