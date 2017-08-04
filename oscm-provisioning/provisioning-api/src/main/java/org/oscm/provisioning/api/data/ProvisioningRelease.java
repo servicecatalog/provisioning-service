@@ -17,7 +17,6 @@ import org.oscm.lagom.data.Identity;
 
 import javax.annotation.concurrent.Immutable;
 import java.util.Collections;
-import java.util.Date;
 import java.util.Map;
 import java.util.UUID;
 
@@ -87,7 +86,7 @@ public class ProvisioningRelease extends Identity {
 
     @JsonCreator
     public ProvisioningRelease(@JsonProperty(FIELD_ID) UUID id,
-        @JsonProperty(FIELD_TIMESTAMP) Date timestamp,
+        @JsonProperty(FIELD_TIMESTAMP) Long timestamp,
         @JsonProperty(FIELD_TARGET) String target,
         @JsonProperty(FIELD_NAMESPACE) String namespace,
         @JsonProperty(FIELD_TEMPLATE) Template template,

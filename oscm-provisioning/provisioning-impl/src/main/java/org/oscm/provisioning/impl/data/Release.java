@@ -13,6 +13,8 @@ package org.oscm.provisioning.impl.data;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import org.oscm.core.api.data.CoreSubscription;
+import org.oscm.rudder.api.data.InstallReleaseRequest;
+import org.oscm.rudder.api.data.UpdateReleaseRequest;
 
 import javax.annotation.concurrent.Immutable;
 import java.util.Collections;
@@ -110,5 +112,17 @@ public class Release {
     @JsonProperty(FIELD_PARAMETERS)
     public Map<String, Object> getParameters() {
         return Collections.unmodifiableMap(parameters);
+    }
+
+    public InstallReleaseRequest getAsInstallRequest(String instance) {
+
+        return new InstallReleaseRequest(instance, getNamespace(),
+            getRepository(), getTemplate(), getVersion(), getParameters());
+    }
+
+    public UpdateReleaseRequest getAsUpdateRequest(String instance) {
+
+        return new UpdateReleaseRequest(instance,
+            getRepository(), getTemplate(), getVersion(), getParameters());
     }
 }

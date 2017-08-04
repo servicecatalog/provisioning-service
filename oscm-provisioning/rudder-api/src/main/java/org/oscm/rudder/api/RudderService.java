@@ -11,6 +11,7 @@
 package org.oscm.rudder.api;
 
 import akka.NotUsed;
+import com.lightbend.lagom.javadsl.api.CircuitBreaker;
 import com.lightbend.lagom.javadsl.api.Descriptor;
 import com.lightbend.lagom.javadsl.api.Service;
 import com.lightbend.lagom.javadsl.api.ServiceCall;
@@ -20,6 +21,7 @@ import org.oscm.rudder.api.data.ReleaseStatusResponse;
 import org.oscm.rudder.api.data.UpdateReleaseRequest;
 
 import static com.lightbend.lagom.javadsl.api.Service.named;
+import static com.lightbend.lagom.javadsl.api.Service.restCall;
 
 public interface RudderService extends Service {
 
@@ -37,12 +39,12 @@ public interface RudderService extends Service {
     @Override
     default Descriptor descriptor() {
         return named(SERVICE_NAME).withCalls(
-            Service.restCall(Method.POST, "/api/v1/releases", this::install),
-            Service.restCall(Method.PUT, "/api/v1/releases", this::update),
-            Service.restCall(Method.DELETE, "/api/v1/releases/:release",
+            restCall(Method.POST, "/api/v1/releases", this::install),
+            restCall(Method.PUT, "/api/v1/releases", this::update),
+            restCall(Method.DELETE, "/api/v1/releases/:release",
                 this::delete),
-            Service.restCall(Method.GET,
+            restCall(Method.GET,
                 "/api/v1/releases/:release/:version/status", this::status)
-        );
+        ).withCircuitBreaker(CircuitBreaker.none());
     }
 }

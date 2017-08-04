@@ -10,11 +10,16 @@
 
 package org.oscm.rudder.api.data;
 
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonProperty;
+
+import javax.annotation.concurrent.Immutable;
 import java.util.Map;
 
 /**
  * @author miethaner
  */
+@Immutable
 public class UpdateReleaseRequest {
 
     public static final String FIELD_NAME = "name";
@@ -33,43 +38,41 @@ public class UpdateReleaseRequest {
 
     private Map<String, Object> values;
 
+    @JsonCreator
+    public UpdateReleaseRequest(@JsonProperty(FIELD_NAME) String name,
+        @JsonProperty(FIELD_REPOSITORY) String repository,
+        @JsonProperty(FIELD_CHART) String chart,
+        @JsonProperty(FIELD_VERSION) String version,
+        @JsonProperty(FIELD_VERSION) Map<String, Object> values) {
+        this.name = name;
+        this.repository = repository;
+        this.chart = chart;
+        this.version = version;
+        this.values = values;
+    }
+
+    @JsonProperty(FIELD_NAME)
     public String getName() {
         return name;
     }
 
-    public void setName(String name) {
-        this.name = name;
-    }
-
+    @JsonProperty(FIELD_REPOSITORY)
     public String getRepository() {
         return repository;
     }
 
-    public void setRepository(String repository) {
-        this.repository = repository;
-    }
-
+    @JsonProperty(FIELD_CHART)
     public String getChart() {
         return chart;
     }
 
-    public void setChart(String chart) {
-        this.chart = chart;
-    }
-
+    @JsonProperty(FIELD_VERSION)
     public String getVersion() {
         return version;
     }
 
-    public void setVersion(String version) {
-        this.version = version;
-    }
-
+    @JsonProperty(FIELD_VALUES)
     public Map<String, Object> getValues() {
         return values;
-    }
-
-    public void setValues(Map<String, Object> values) {
-        this.values = values;
     }
 }

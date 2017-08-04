@@ -35,14 +35,12 @@ import java.util.concurrent.CompletionStage;
 public class ProvisioningServiceImpl implements ProvisioningService {
 
     private final PersistentEntityRegistry registry;
-    private final CoreService coreService;
 
     @Inject
     public ProvisioningServiceImpl(
         PersistentEntityRegistry registry,
         CoreService coreService) {
         this.registry = registry;
-        this.coreService = coreService;
 
         registry.register(ReleaseEntity.class);
 
@@ -67,9 +65,7 @@ public class ProvisioningServiceImpl implements ProvisioningService {
 
                 return registry.refFor(ReleaseEntity.class, id)
                     .ask(ReleaseCommand.GetRelease.INSTANCE)
-                    .thenApply(release -> {
-                        return Pair.create(release, pair.second());
-                    });
+                    .thenApply(release -> Pair.create(release, pair.second()));
             });
     }
 

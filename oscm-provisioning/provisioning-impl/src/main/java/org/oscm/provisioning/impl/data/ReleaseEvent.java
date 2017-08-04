@@ -22,7 +22,6 @@ import org.oscm.lagom.data.Identity;
 
 import javax.annotation.concurrent.Immutable;
 import java.util.Collections;
-import java.util.Date;
 import java.util.Map;
 import java.util.UUID;
 
@@ -40,7 +39,7 @@ public abstract class ReleaseEvent extends Identity implements Jsonable,
     public static final String FIELD_SERVICES = "services";
     public static final String FIELD_FAILURE = "failure";
 
-    public ReleaseEvent(UUID id, Date timestamp) {
+    public ReleaseEvent(UUID id, Long timestamp) {
         super(id, timestamp);
     }
 
@@ -50,7 +49,7 @@ public abstract class ReleaseEvent extends Identity implements Jsonable,
     }
 
     @Immutable
-    public final class InstallingRelease extends ReleaseEvent {
+    public static final class InstallingRelease extends ReleaseEvent {
 
         private Release release;
 
@@ -58,7 +57,7 @@ public abstract class ReleaseEvent extends Identity implements Jsonable,
 
         @JsonCreator
         public InstallingRelease(@JsonProperty(FIELD_ID) UUID id,
-            @JsonProperty(FIELD_TIMESTAMP) Date timestamp,
+            @JsonProperty(FIELD_TIMESTAMP) Long timestamp,
             @JsonProperty(FIELD_INSTANCE) String instance,
             @JsonProperty(FIELD_RELEASE) Release release) {
             super(id, timestamp);
@@ -78,13 +77,13 @@ public abstract class ReleaseEvent extends Identity implements Jsonable,
     }
 
     @Immutable
-    public final class UpdatingRelease extends ReleaseEvent {
+    public static final class UpdatingRelease extends ReleaseEvent {
 
         private Release release;
 
         @JsonCreator
         public UpdatingRelease(@JsonProperty(FIELD_ID) UUID id,
-            @JsonProperty(FIELD_TIMESTAMP) Date timestamp,
+            @JsonProperty(FIELD_TIMESTAMP) Long timestamp,
             @JsonProperty(FIELD_RELEASE) Release release) {
             super(id, timestamp);
             this.release = release;
@@ -97,23 +96,23 @@ public abstract class ReleaseEvent extends Identity implements Jsonable,
     }
 
     @Immutable
-    public final class DeletingRelease extends ReleaseEvent {
+    public static final class DeletingRelease extends ReleaseEvent {
 
         @JsonCreator
         public DeletingRelease(@JsonProperty(FIELD_ID) UUID id,
-            @JsonProperty(FIELD_TIMESTAMP) Date timestamp) {
+            @JsonProperty(FIELD_TIMESTAMP) Long timestamp) {
             super(id, timestamp);
         }
     }
 
     @Immutable
-    public final class DeployedRelease extends ReleaseEvent {
+    public static final class DeployedRelease extends ReleaseEvent {
 
         private Map<String, String> services;
 
         @JsonCreator
         public DeployedRelease(@JsonProperty(FIELD_ID) UUID id,
-            @JsonProperty(FIELD_TIMESTAMP) Date timestamp,
+            @JsonProperty(FIELD_TIMESTAMP) Long timestamp,
             @JsonProperty(FIELD_SERVICES)
                 Map<String, String> services) {
             super(id, timestamp);
@@ -127,25 +126,25 @@ public abstract class ReleaseEvent extends Identity implements Jsonable,
     }
 
     @Immutable
-    public final class DeletedRelease extends ReleaseEvent {
+    public static final class DeletedRelease extends ReleaseEvent {
 
         @JsonCreator
         public DeletedRelease(@JsonProperty(FIELD_ID) UUID id,
-            @JsonProperty(FIELD_TIMESTAMP) Date timestamp) {
+            @JsonProperty(FIELD_TIMESTAMP) Long timestamp) {
             super(id, timestamp);
         }
     }
 
     @Immutable
-    public final class FailedReleaseInstall extends ReleaseEvent {
+    public static final class FailedRelease extends ReleaseEvent {
 
         private Release release;
 
         private Failure failure;
 
         @JsonCreator
-        public FailedReleaseInstall(@JsonProperty(FIELD_ID) UUID id,
-            @JsonProperty(FIELD_TIMESTAMP) Date timestamp,
+        public FailedRelease(@JsonProperty(FIELD_ID) UUID id,
+            @JsonProperty(FIELD_TIMESTAMP) Long timestamp,
             @JsonProperty(FIELD_RELEASE) Release release,
             @JsonProperty(FIELD_FAILURE) Failure failure) {
             super(id, timestamp);
@@ -165,13 +164,13 @@ public abstract class ReleaseEvent extends Identity implements Jsonable,
     }
 
     @Immutable
-    public final class FailedReleaseUpdateOrDelete extends ReleaseEvent {
+    public static final class ErrorRelease extends ReleaseEvent {
 
         private Failure failure;
 
         @JsonCreator
-        public FailedReleaseUpdateOrDelete(@JsonProperty(FIELD_ID) UUID id,
-            @JsonProperty(FIELD_TIMESTAMP) Date timestamp,
+        public ErrorRelease(@JsonProperty(FIELD_ID) UUID id,
+            @JsonProperty(FIELD_TIMESTAMP) Long timestamp,
             @JsonProperty(FIELD_FAILURE) Failure failure) {
             super(id, timestamp);
             this.failure = failure;

@@ -17,7 +17,9 @@ import org.oscm.lagom.data.Identity;
 import org.oscm.provisioning.api.data.ProvisioningRelease;
 
 import javax.annotation.concurrent.Immutable;
-import java.util.*;
+import java.util.Collections;
+import java.util.Map;
+import java.util.UUID;
 
 @Immutable
 public final class ReleaseState extends Identity implements Jsonable {
@@ -28,7 +30,7 @@ public final class ReleaseState extends Identity implements Jsonable {
     public static final String FIELD_INSTANCE = "instance";
     public static final String FIELD_SERVICES = "services";
 
-    private Optional<Release> release;
+    private Release release;
 
     private ReleaseStatus status;
 
@@ -39,8 +41,8 @@ public final class ReleaseState extends Identity implements Jsonable {
     private Map<String, String> services;
 
     public ReleaseState(@JsonProperty(FIELD_ID) UUID id,
-        @JsonProperty(FIELD_TIMESTAMP) Date timestamp,
-        @JsonProperty(FIELD_RELEASE) Optional<Release> release,
+        @JsonProperty(FIELD_TIMESTAMP) Long timestamp,
+        @JsonProperty(FIELD_RELEASE) Release release,
         @JsonProperty(FIELD_STATUS) ReleaseStatus status,
         @JsonProperty(FIELD_INSTANCE) String instance,
         @JsonProperty(FIELD_FAILURE) Failure failure,
@@ -54,7 +56,7 @@ public final class ReleaseState extends Identity implements Jsonable {
     }
 
     @JsonProperty(FIELD_RELEASE)
-    public Optional<Release> getRelease() {
+    public Release getRelease() {
         return release;
     }
 
@@ -79,53 +81,80 @@ public final class ReleaseState extends Identity implements Jsonable {
     }
 
     public static ReleaseState none() {
-        return new ReleaseState(null, null, Optional.empty(),
-            ReleaseStatus.NONE, null,
-            null, null);
+        return new ReleaseState(null, null, null,
+            ReleaseStatus.NONE, null, null, null);
     }
 
     public ReleaseState installing(ReleaseEvent.InstallingRelease event) {
         return new ReleaseState(event.getId(), event.getTimestamp(),
-            Optional.of(event.getRelease()), ReleaseStatus.INSTALLING,
-            event.getInstance(), getFailure(), getServices());
+            event.getRelease(), ReleaseStatus.INSTALLING, event.getInstance(),
+            null, null);
     }
 
-    public ReleaseState failedInstall(ReleaseEvent.FailedReleaseInstall event) {
+    public ReleaseState updating(ReleaseEvent.UpdatingRelease event) {
         return new ReleaseState(event.getId(), event.getTimestamp(),
-            Optional.of(event.getRelease()), ReleaseStatus.INSTALLING,
-            instance, failure, services);
+            event.getRelease(), ReleaseStatus.UPDATING, instance, null, null);
+    }
+
+    public ReleaseState deleting(ReleaseEvent.DeletingRelease event) {
+        return new ReleaseState(event.getId(), event.getTimestamp(),
+            release, ReleaseStatus.DELETING, instance, null, null);
+    }
+
+    public ReleaseState deployed(ReleaseEvent.DeployedRelease event) {
+        return new ReleaseState(event.getId(), event.getTimestamp(),
+            release, ReleaseStatus.DEPLOYED, instance, null,
+            event.getServices());
+    }
+
+    public ReleaseState deleted(ReleaseEvent.DeletedRelease event) {
+        return new ReleaseState(event.getId(), event.getTimestamp(),
+            release, ReleaseStatus.DELETED, instance, null, null);
+    }
+
+    public ReleaseState failed(ReleaseEvent.FailedRelease event) {
+        return new ReleaseState(event.getId(), event.getTimestamp(),
+            event.getRelease(), ReleaseStatus.FAILED, null, event.getFailure(),
+            null);
+    }
+
+    public ReleaseState error(ReleaseEvent.ErrorRelease event) {
+        return new ReleaseState(event.getId(), event.getTimestamp(),
+            release, ReleaseStatus.ERROR, instance, event.getFailure(),
+            services);
     }
 
     public ProvisioningRelease getAsAPI() {
-        if (release.isPresent()) {
+        ProvisioningRelease.Status pStatus = null;
+        switch (status) {
+        case INSTALLING:
+        case UPDATING:
+        case DELETING:
+            pStatus = ProvisioningRelease.Status.PENDING;
+            break;
+        case FAILED:
+        case ERROR:
+            pStatus = ProvisioningRelease.Status.FAILED;
+            break;
+        case DELETED:
+            pStatus = ProvisioningRelease.Status.DELETED;
+            break;
+        case DEPLOYED:
+            pStatus = ProvisioningRelease.Status.DEPLOYED;
+        }
 
-            ProvisioningRelease.Status pStatus = null;
-            switch (status) {
-            case INSTALLING:
-            case UPDATING:
-            case DELETING:
-                pStatus = ProvisioningRelease.Status.PENDING;
-                break;
-            case FAILED_INSTALL:
-            case FAILED_UPD_DEL:
-                pStatus = ProvisioningRelease.Status.FAILED;
-                break;
-            case DELETED:
-                pStatus = ProvisioningRelease.Status.DELETED;
-                break;
-            case DEPLOYED:
-                pStatus = ProvisioningRelease.Status.DEPLOYED;
-            }
-
+        if (release != null) {
             return new ProvisioningRelease(getId(),
-                getTimestamp(), release.get().getTarget(),
-                release.get().getNamespace(),
-                new ProvisioningRelease.Template(release.get().getRepository(),
-                    release.get().getTemplate(), release.get().getVersion()),
-                release.get().getLabels(), release.get().getParameters(),
+                getTimestamp(), release.getTarget(),
+                release.getNamespace(),
+                new ProvisioningRelease.Template(release.getRepository(),
+                    release.getTemplate(), release.getVersion()),
+                release.getLabels(), release.getParameters(),
                 pStatus, failure, instance, services);
         } else {
-            return null;
+            return new ProvisioningRelease(getId(),
+                getTimestamp(), null, null, null, null, null, pStatus, failure,
+                instance, services);
         }
     }
 }

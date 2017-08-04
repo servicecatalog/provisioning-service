@@ -16,7 +16,6 @@ import org.oscm.lagom.data.Identity;
 
 import javax.annotation.concurrent.Immutable;
 import java.util.Collections;
-import java.util.Date;
 import java.util.Map;
 import java.util.UUID;
 
@@ -82,7 +81,7 @@ public class CoreSubscription extends Identity {
 
     @JsonCreator
     public CoreSubscription(@JsonProperty(FIELD_ID) UUID id,
-        @JsonProperty(FIELD_TIMESTAMP) Date timestamp,
+        @JsonProperty(FIELD_TIMESTAMP) Long timestamp,
         @JsonProperty(FIELD_OPERATION) Operation operation,
         @JsonProperty(FIELD_TARGET) String target,
         @JsonProperty(FIELD_NAMESPACE) String namespace,

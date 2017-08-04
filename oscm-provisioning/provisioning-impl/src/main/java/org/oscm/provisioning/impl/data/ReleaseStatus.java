@@ -32,11 +32,11 @@ public enum ReleaseStatus {
     @JsonProperty(Constants.OPTION_DELETED)
     DELETED, //
 
-    @JsonProperty(Constants.OPTION_FAILED_INSTALL)
-    FAILED_INSTALL, //
+    @JsonProperty(Constants.OPTION_FAILED)
+    FAILED, //
 
-    @JsonProperty(Constants.OPTION_FAILED_UPD_DEL)
-    FAILED_UPD_DEL; //
+    @JsonProperty(Constants.OPTION_ERROR)
+    ERROR; //
 
     public static class Constants {
         public static final String OPTION_NONE = "none";
@@ -45,7 +45,7 @@ public enum ReleaseStatus {
         public static final String OPTION_DELETING = "deleting";
         public static final String OPTION_DEPLOYED = "deployed";
         public static final String OPTION_DELETED = "deleted";
-        public static final String OPTION_FAILED_INSTALL = "failed_install";
-        public static final String OPTION_FAILED_UPD_DEL = "failed_upd_del";
+        public static final String OPTION_FAILED = "failed";
+        public static final String OPTION_ERROR = "error";
     }
 }
