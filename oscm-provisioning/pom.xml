@@ -87,6 +87,11 @@
             </dependency>
             <dependency>
                 <groupId>com.lightbend.lagom</groupId>
+                <artifactId>lagom-javadsl-api_2.11</artifactId>
+                <version>${lagom.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.lightbend.lagom</groupId>
                 <artifactId>lagom-javadsl-persistence-cassandra_2.11
                 </artifactId>
                 <version>${lagom.version}</version>
@@ -98,7 +103,7 @@
             </dependency>
             <dependency>
                 <groupId>com.lightbend.lagom</groupId>
-                <artifactId>lagom-javadsl-integration-client_2.11</artifactId>
+                <artifactId>lagom-javadsl-client_2.11</artifactId>
                 <version>${lagom.version}</version>
             </dependency>
         </dependencies>

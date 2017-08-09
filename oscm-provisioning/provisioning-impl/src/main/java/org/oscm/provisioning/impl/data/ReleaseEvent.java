@@ -29,7 +29,7 @@ public abstract class ReleaseEvent extends Identity implements Jsonable,
     AggregateEvent<ReleaseEvent> {
 
     private static final int NUM_SHARDS = 4;
-    private static final String TAG_NAME = "provisioning";
+    private static final String TAG_NAME = "release";
 
     public static final AggregateEventShards<ReleaseEvent> TAG = AggregateEventTag
         .sharded(ReleaseEvent.class, TAG_NAME, NUM_SHARDS);
@@ -106,6 +106,16 @@ public abstract class ReleaseEvent extends Identity implements Jsonable,
     }
 
     @Immutable
+    public static final class PendingRelease extends ReleaseEvent {
+
+        @JsonCreator
+        public PendingRelease(@JsonProperty(FIELD_ID) UUID id,
+            @JsonProperty(FIELD_TIMESTAMP) Long timestamp) {
+            super(id, timestamp);
+        }
+    }
+
+    @Immutable
     public static final class DeployedRelease extends ReleaseEvent {
 
         private Map<String, String> services;
@@ -138,23 +148,14 @@ public abstract class ReleaseEvent extends Identity implements Jsonable,
     @Immutable
     public static final class FailedRelease extends ReleaseEvent {
 
-        private Release release;
-
         private Failure failure;
 
         @JsonCreator
         public FailedRelease(@JsonProperty(FIELD_ID) UUID id,
             @JsonProperty(FIELD_TIMESTAMP) Long timestamp,
-            @JsonProperty(FIELD_RELEASE) Release release,
             @JsonProperty(FIELD_FAILURE) Failure failure) {
             super(id, timestamp);
-            this.release = release;
             this.failure = failure;
-        }
-
-        @JsonProperty(FIELD_RELEASE)
-        public Release getRelease() {
-            return release;
         }
 
         @JsonProperty(FIELD_FAILURE)

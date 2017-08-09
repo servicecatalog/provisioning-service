@@ -18,31 +18,35 @@ public enum ReleaseStatus {
     NONE,
 
     @JsonProperty(Constants.OPTION_INSTALLING)
-    INSTALLING, //
+    INSTALLING,
 
     @JsonProperty(Constants.OPTION_UPDATING)
-    UPDATING, //
+    UPDATING,
 
     @JsonProperty(Constants.OPTION_DELETING)
-    DELETING, //
+    DELETING,
+
+    @JsonProperty(Constants.OPTION_PENDING)
+    PENDING,
 
     @JsonProperty(Constants.OPTION_DEPLOYED)
-    DEPLOYED, //
+    DEPLOYED,
 
     @JsonProperty(Constants.OPTION_DELETED)
-    DELETED, //
+    DELETED,
 
     @JsonProperty(Constants.OPTION_FAILED)
-    FAILED, //
+    FAILED,
 
     @JsonProperty(Constants.OPTION_ERROR)
-    ERROR; //
+    ERROR;
 
     public static class Constants {
         public static final String OPTION_NONE = "none";
         public static final String OPTION_INSTALLING = "installing";
         public static final String OPTION_UPDATING = "updating";
         public static final String OPTION_DELETING = "deleting";
+        public static final String OPTION_PENDING = "pending";
         public static final String OPTION_DEPLOYED = "deployed";
         public static final String OPTION_DELETED = "deleted";
         public static final String OPTION_FAILED = "failed";

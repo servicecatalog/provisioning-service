@@ -52,13 +52,13 @@ public interface ReleaseCommand extends Jsonable {
     }
 
     @Immutable
-    public final class InternalDeployedRelease
+    public final class InternalCommitRelease
         implements ReleaseCommand, PersistentEntity.ReplyType<Done> {
 
         private Map<String, String> services;
 
         @JsonCreator
-        public InternalDeployedRelease(
+        public InternalCommitRelease(
             @JsonProperty(FIELD_SERVICES) Map<String, String> services) {
             this.services = services;
         }
@@ -69,19 +69,19 @@ public interface ReleaseCommand extends Jsonable {
         }
     }
 
-    public enum InternalDeletedRelease
+    public enum InternalDeleteRelease
         implements ReleaseCommand, PersistentEntity.ReplyType<Done> {
         INSTANCE
     }
 
     @Immutable
-    public final class InternalErrorRelease
+    public final class InternalFailRelease
         implements ReleaseCommand, PersistentEntity.ReplyType<Done> {
 
         private Failure failure;
 
         @JsonCreator
-        public InternalErrorRelease(
+        public InternalFailRelease(
             @JsonProperty(FIELD_FAILURE) Failure failure) {
             this.failure = failure;
         }
@@ -95,6 +95,12 @@ public interface ReleaseCommand extends Jsonable {
     public enum GetRelease
         implements ReleaseCommand,
         PersistentEntity.ReplyType<ProvisioningRelease> {
+        INSTANCE
+    }
+
+    public enum InternalGetReleaseState
+        implements ReleaseCommand,
+        PersistentEntity.ReplyType<ReleaseState> {
         INSTANCE
     }
 }

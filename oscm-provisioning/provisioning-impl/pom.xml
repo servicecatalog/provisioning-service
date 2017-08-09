@@ -48,7 +48,7 @@
         </dependency>
         <dependency>
             <groupId>com.lightbend.lagom</groupId>
-            <artifactId>lagom-javadsl-integration-client_2.11</artifactId>
+            <artifactId>lagom-javadsl-client_2.11</artifactId>
         </dependency>
         <dependency>
             <groupId>com.lightbend.lagom</groupId>

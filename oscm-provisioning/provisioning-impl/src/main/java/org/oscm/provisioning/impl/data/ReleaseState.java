@@ -101,6 +101,11 @@ public final class ReleaseState extends Identity implements Jsonable {
             release, ReleaseStatus.DELETING, instance, null, null);
     }
 
+    public ReleaseState pending(ReleaseEvent.PendingRelease event) {
+        return new ReleaseState(event.getId(), event.getTimestamp(),
+            release, ReleaseStatus.PENDING, instance, null, null);
+    }
+
     public ReleaseState deployed(ReleaseEvent.DeployedRelease event) {
         return new ReleaseState(event.getId(), event.getTimestamp(),
             release, ReleaseStatus.DEPLOYED, instance, null,
@@ -114,7 +119,7 @@ public final class ReleaseState extends Identity implements Jsonable {
 
     public ReleaseState failed(ReleaseEvent.FailedRelease event) {
         return new ReleaseState(event.getId(), event.getTimestamp(),
-            event.getRelease(), ReleaseStatus.FAILED, null, event.getFailure(),
+            release, ReleaseStatus.FAILED, null, event.getFailure(),
             null);
     }
 
@@ -130,6 +135,7 @@ public final class ReleaseState extends Identity implements Jsonable {
         case INSTALLING:
         case UPDATING:
         case DELETING:
+        case PENDING:
             pStatus = ProvisioningRelease.Status.PENDING;
             break;
         case FAILED:

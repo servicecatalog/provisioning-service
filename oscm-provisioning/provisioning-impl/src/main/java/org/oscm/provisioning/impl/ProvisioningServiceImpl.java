@@ -49,26 +49,6 @@ public class ProvisioningServiceImpl implements ProvisioningService {
                 .mapAsync(1, this::consumeSubscription));
     }
 
-    @Override
-    public Topic<ProvisioningRelease> releaseTopic() {
-        return TopicProducer
-            .taggedStreamWithOffset(ReleaseEvent.TAG.allTags(),
-                this::streamRelease);
-    }
-
-    private Source<Pair<ProvisioningRelease, Offset>, ?> streamRelease(
-        AggregateEventTag<ReleaseEvent> tag, Offset offset) {
-        return registry.eventStream(tag, offset)
-            .mapAsync(1, pair -> {
-
-                String id = pair.first().getIdString();
-
-                return registry.refFor(ReleaseEntity.class, id)
-                    .ask(ReleaseCommand.GetRelease.INSTANCE)
-                    .thenApply(release -> Pair.create(release, pair.second()));
-            });
-    }
-
     private CompletionStage<Done> consumeSubscription(
         CoreSubscription subscription) {
 
@@ -98,5 +78,25 @@ public class ProvisioningServiceImpl implements ProvisioningService {
         });
 
         return stage;
+    }
+
+    @Override
+    public Topic<ProvisioningRelease> releaseTopic() {
+        return TopicProducer
+            .taggedStreamWithOffset(ReleaseEvent.TAG.allTags(),
+                this::streamRelease);
+    }
+
+    private Source<Pair<ProvisioningRelease, Offset>, ?> streamRelease(
+        AggregateEventTag<ReleaseEvent> tag, Offset offset) {
+        return registry.eventStream(tag, offset)
+            .mapAsync(1, pair -> {
+
+                String id = pair.first().getIdString();
+
+                return registry.refFor(ReleaseEntity.class, id)
+                    .ask(ReleaseCommand.GetRelease.INSTANCE)
+                    .thenApply(release -> Pair.create(release, pair.second()));
+            });
     }
 }

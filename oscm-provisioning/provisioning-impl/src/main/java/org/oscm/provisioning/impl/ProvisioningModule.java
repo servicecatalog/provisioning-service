@@ -22,5 +22,6 @@ public class ProvisioningModule extends AbstractModule implements
     protected void configure() {
         bindService(ProvisioningService.class, ProvisioningServiceImpl.class);
         bindClient(CoreService.class);
+        bind(ReleaseScheduler.class).asEagerSingleton();
     }
 }

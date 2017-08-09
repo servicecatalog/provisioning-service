@@ -15,24 +15,13 @@ import akka.actor.ActorSystem;
 import akka.actor.Cancellable;
 import com.lightbend.lagom.javadsl.persistence.PersistentEntity;
 import com.lightbend.lagom.javadsl.persistence.PersistentEntityRegistry;
-import org.oscm.lagom.enums.Messages;
-import org.oscm.lagom.exceptions.ConnectionException;
-import org.oscm.lagom.exceptions.ValidationException;
-import org.oscm.lagom.filters.BasicAuthFilter;
-import org.oscm.provisioning.api.data.ProvisioningRelease;
-import org.oscm.provisioning.impl.data.*;
-import org.oscm.rudder.api.RudderService;
-import org.oscm.rudder.api.data.ReleaseStatusResponse;
-import scala.concurrent.duration.Duration;
+import org.oscm.provisioning.impl.data.ReleaseCommand;
+import org.oscm.provisioning.impl.data.ReleaseEvent;
+import org.oscm.provisioning.impl.data.ReleaseState;
 
 import javax.inject.Inject;
-import java.net.URI;
-import java.net.URISyntaxException;
-import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.TimeUnit;
 
 public class ReleaseEntity extends
     PersistentEntity<ReleaseCommand, ReleaseEvent, ReleaseState> {
@@ -87,7 +76,7 @@ public class ReleaseEntity extends
         BehaviorBuilder builder = newBehaviorBuilder(state);
 
         builder.setCommandHandler(ReleaseCommand.UpdateRelease.class,
-            this::installRelease);
+            this::installingRelease);
 
         builder.setReadOnlyCommandHandler(ReleaseCommand.DeleteRelease.class,
             this::alreadyDone);
@@ -95,10 +84,6 @@ public class ReleaseEntity extends
         builder.setEventHandlerChangingBehavior(
             ReleaseEvent.InstallingRelease.class,
             event -> installing(state().installing(event)));
-
-        builder.setEventHandlerChangingBehavior(
-            ReleaseEvent.FailedRelease.class,
-            event -> failed(state().failed(event)));
 
         addGetReleaseHandler(builder);
 
@@ -109,24 +94,32 @@ public class ReleaseEntity extends
         BehaviorBuilder builder = newBehaviorBuilder(state);
 
         builder.setCommandHandler(ReleaseCommand.UpdateRelease.class,
-            this::updateRelease);
+            this::installingRelease);
 
         builder.setCommandHandler(ReleaseCommand.DeleteRelease.class,
-            this::deleteRelease);
+            this::deletedRelease);
+
+        builder.setCommandHandler(ReleaseCommand.InternalCommitRelease.class,
+            this::pendingRelease);
+
+        builder.setCommandHandler(ReleaseCommand.InternalFailRelease.class,
+            this::failedRelease);
+
+        builder.setEventHandler(
+            ReleaseEvent.InstallingRelease.class,
+            state()::installing);
 
         builder.setEventHandlerChangingBehavior(
-            ReleaseEvent.UpdatingRelease.class,
-            event -> updating(state().updating(event)));
+            ReleaseEvent.DeletedRelease.class,
+            evt -> deleted(state().deleted(evt)));
 
         builder.setEventHandlerChangingBehavior(
-            ReleaseEvent.DeletingRelease.class,
-            event -> deleting(state().deleting(event))
-        );
+            ReleaseEvent.PendingRelease.class,
+            evt -> pending(state.pending(evt)));
 
-        addWatchdogHandler(builder);
-
-        startWatchdog(system.settings().config()
-            .getDuration(Config.WATCHDOG_STATUS_INTERVAL));
+        builder.setEventHandlerChangingBehavior(
+            ReleaseEvent.FailedRelease.class,
+            evt -> failed(state().failed(evt)));
 
         addGetReleaseHandler(builder);
 
@@ -137,23 +130,33 @@ public class ReleaseEntity extends
         BehaviorBuilder builder = newBehaviorBuilder(state);
 
         builder.setCommandHandler(ReleaseCommand.UpdateRelease.class,
-            this::updateRelease);
+            this::updatingRelease);
 
         builder.setCommandHandler(ReleaseCommand.DeleteRelease.class,
-            this::deleteRelease);
+            this::deletingRelease);
+
+        builder.setCommandHandler(ReleaseCommand.InternalCommitRelease.class,
+            this::pendingRelease);
+
+        builder.setCommandHandler(ReleaseCommand.InternalFailRelease.class,
+            this::errorRelease);
 
         builder.setEventHandler(ReleaseEvent.UpdatingRelease.class,
-            event -> state().updating(event));
+            state()::updating);
 
         builder.setEventHandlerChangingBehavior(
             ReleaseEvent.DeletingRelease.class,
             event -> deleting(state().deleting(event))
         );
 
-        addWatchdogHandler(builder);
+        builder.setEventHandlerChangingBehavior(
+            ReleaseEvent.PendingRelease.class,
+            evt -> pending(state.pending(evt)));
 
-        startWatchdog(system.settings().config()
-            .getDuration(Config.WATCHDOG_STATUS_INTERVAL));
+        builder.setEventHandlerChangingBehavior(
+            ReleaseEvent.ErrorRelease.class,
+            event -> error(state().error(event))
+        );
 
         addGetReleaseHandler(builder);
 
@@ -169,12 +172,53 @@ public class ReleaseEntity extends
         builder.setReadOnlyCommandHandler(ReleaseCommand.DeleteRelease.class,
             this::alreadyDone);
 
-        addWatchdogHandler(builder);
-
-        startWatchdog(system.settings().config()
-            .getDuration(Config.WATCHDOG_STATUS_INTERVAL));
-
         addGetReleaseHandler(builder);
+
+        return builder.build();
+    }
+
+    private Behavior pending(ReleaseState state) {
+        BehaviorBuilder builder = newBehaviorBuilder(state);
+
+        builder.setCommandHandler(ReleaseCommand.UpdateRelease.class,
+            this::updatingRelease);
+
+        builder.setCommandHandler(ReleaseCommand.DeleteRelease.class,
+            this::deletingRelease);
+
+        builder.setCommandHandler(ReleaseCommand.InternalCommitRelease.class,
+            this::deployedRelease);
+
+        builder.setCommandHandler(ReleaseCommand.InternalDeleteRelease.class,
+            this::deletedRelease);
+
+        builder.setCommandHandler(ReleaseCommand.InternalFailRelease.class,
+            this::errorRelease);
+
+        builder.setEventHandlerChangingBehavior(
+            ReleaseEvent.UpdatingRelease.class,
+            evt -> updating(state().updating(evt))
+        );
+
+        builder.setEventHandlerChangingBehavior(
+            ReleaseEvent.DeletingRelease.class,
+            evt -> deleting(state().deleting(evt))
+        );
+
+        builder.setEventHandlerChangingBehavior(
+            ReleaseEvent.DeployedRelease.class,
+            evt -> deployed(state().deployed(evt))
+        );
+
+        builder.setEventHandlerChangingBehavior(
+            ReleaseEvent.DeletedRelease.class,
+            evt -> deleted(state().deleted(evt))
+        );
+
+        builder.setEventHandlerChangingBehavior(
+            ReleaseEvent.ErrorRelease.class,
+            evt -> error(state().error(evt))
+        );
 
         return builder.build();
     }
@@ -183,10 +227,16 @@ public class ReleaseEntity extends
         BehaviorBuilder builder = newBehaviorBuilder(state);
 
         builder.setCommandHandler(ReleaseCommand.UpdateRelease.class,
-            this::updateRelease);
+            this::updatingRelease);
 
         builder.setCommandHandler(ReleaseCommand.DeleteRelease.class,
-            this::deleteRelease);
+            this::deletingRelease);
+
+        builder.setCommandHandler(ReleaseCommand.InternalDeleteRelease.class,
+            this::deletedRelease);
+
+        builder.setCommandHandler(ReleaseCommand.InternalFailRelease.class,
+            this::errorRelease);
 
         builder.setEventHandlerChangingBehavior(
             ReleaseEvent.UpdatingRelease.class,
@@ -197,10 +247,15 @@ public class ReleaseEntity extends
             event -> deleting(state().deleting(event))
         );
 
-        addWatchdogHandler(builder);
+        builder.setEventHandlerChangingBehavior(
+            ReleaseEvent.DeletedRelease.class,
+            evt -> deleted(state().deleted(evt))
+        );
 
-        startWatchdog(system.settings().config()
-            .getDuration(Config.WATCHDOG_MONITOR_INTERVAL));
+        builder.setEventHandlerChangingBehavior(
+            ReleaseEvent.ErrorRelease.class,
+            evt -> error(state().error(evt))
+        );
 
         addGetReleaseHandler(builder);
 
@@ -225,19 +280,14 @@ public class ReleaseEntity extends
         BehaviorBuilder builder = newBehaviorBuilder(state);
 
         builder.setCommandHandler(ReleaseCommand.UpdateRelease.class,
-            this::installRelease);
+            this::installingRelease);
 
         builder.setReadOnlyCommandHandler(ReleaseCommand.DeleteRelease.class,
             this::alreadyDone);
 
         builder.setEventHandlerChangingBehavior(
             ReleaseEvent.InstallingRelease.class,
-            event -> installing(state().installing(event)));
-
-        builder.setEventHandler(
-            ReleaseEvent.ErrorRelease.class,
-            state()::error
-        );
+            evt -> installing(state().installing(evt)));
 
         addGetReleaseHandler(builder);
 
@@ -248,18 +298,18 @@ public class ReleaseEntity extends
         BehaviorBuilder builder = newBehaviorBuilder(state);
 
         builder.setCommandHandler(ReleaseCommand.UpdateRelease.class,
-            this::updateRelease);
+            this::updatingRelease);
 
         builder.setCommandHandler(ReleaseCommand.DeleteRelease.class,
-            this::deleteRelease);
+            this::deletingRelease);
 
         builder.setEventHandlerChangingBehavior(
             ReleaseEvent.UpdatingRelease.class,
-            event -> updating(state().updating(event)));
+            evt -> updating(state().updating(evt)));
 
         builder.setEventHandlerChangingBehavior(
             ReleaseEvent.DeletingRelease.class,
-            event -> deleting(state().deleting(event))
+            evt -> deleting(state().deleting(evt))
         );
 
         builder.setEventHandler(
@@ -272,273 +322,81 @@ public class ReleaseEntity extends
         return builder.build();
     }
 
-    private Persist<ReleaseEvent> installRelease(
-        ReleaseCommand.UpdateRelease cmd,
+    private Persist<ReleaseEvent> installingRelease(
+        ReleaseCommand.UpdateRelease cmd, CommandContext<Done> ctx) {
+        return ctx.thenPersist(
+            new ReleaseEvent.InstallingRelease(UUID.fromString(entityId()),
+                System.currentTimeMillis(), INSTANCE_PREFIX + entityId(),
+                cmd.getRelease()),
+            evt -> ctx.reply(Done.getInstance()));
+    }
+
+    private Persist<ReleaseEvent> updatingRelease(
+        ReleaseCommand.UpdateRelease cmd, CommandContext<Done> ctx) {
+        return ctx.thenPersist(
+            new ReleaseEvent.UpdatingRelease(UUID.fromString(entityId()),
+                System.currentTimeMillis(), cmd.getRelease()),
+            evt -> ctx.reply(Done.getInstance()));
+    }
+
+    private Persist<ReleaseEvent> deletingRelease(
+        ReleaseCommand.DeleteRelease cmd, CommandContext<Done> ctx) {
+        return ctx.thenPersist(
+            new ReleaseEvent.DeletingRelease(UUID.fromString(entityId()),
+                System.currentTimeMillis()),
+            evt -> ctx.reply(Done.getInstance()));
+    }
+
+    private Persist<ReleaseEvent> pendingRelease(
+        ReleaseCommand.InternalCommitRelease cmd,
         CommandContext<Done> ctx) {
-
-        Release release = cmd.getRelease();
-
-        RudderService service;
-        try {
-            service = clientManager
-                .getServiceForURI(new URI(release.getTarget()));
-        } catch (NullPointerException | URISyntaxException e) {
-            return ctx.thenPersist(
-                new ReleaseEvent.FailedRelease(UUID.fromString(entityId()),
-                    System.currentTimeMillis(), release,
-                    new ValidationException(
-                        Messages.ERROR_INVALID_URL,
-                        Release.FIELD_TARGET).getAsFailure()),
-                event -> ctx.reply(Done.getInstance()));
-        }
-
-        String instance = INSTANCE_PREFIX + entityId();
-
-        String user = system.settings().config().getString(Config.RUDDER_USER);
-        String password = system.settings().config()
-            .getString(Config.RUDDER_PASSWORD);
-
-        try {
-            return service.install()
-                .handleRequestHeader(BasicAuthFilter.getFilter(user, password))
-                .invoke(release.getAsInstallRequest(instance))
-                .<Persist<ReleaseEvent>>thenApply(
-                    notUsed -> ctx.thenPersist(
-                        new ReleaseEvent.InstallingRelease(
-                            UUID.fromString(entityId()),
-                            System.currentTimeMillis(),
-                            instance, release),
-                        event -> ctx.reply(Done.getInstance())))
-                .exceptionally(
-                    throwable -> ctx.thenPersist(
-                        new ReleaseEvent.FailedRelease(
-                            UUID.fromString(entityId()),
-                            System.currentTimeMillis(),
-                            release,
-                            new ConnectionException(
-                                Messages.ERROR_CONNECTION_FAILURE, throwable)
-                                .getAsFailure()),
-                        event -> ctx.reply(Done.getInstance())))
-                .toCompletableFuture().get();
-        } catch (InterruptedException | ExecutionException e) {
-            //TODO Log error
-            return ctx.done();
-        }
+        return ctx.thenPersist(
+            new ReleaseEvent.PendingRelease(UUID.fromString(entityId()),
+                System.currentTimeMillis()),
+            evt -> ctx.reply(Done.getInstance()));
     }
 
-    private Persist<ReleaseEvent> updateRelease(
-        ReleaseCommand.UpdateRelease cmd,
+    private Persist<ReleaseEvent> deployedRelease(
+        ReleaseCommand.InternalCommitRelease cmd,
         CommandContext<Done> ctx) {
-
-        Release release = cmd.getRelease();
-
-        RudderService service;
-        try {
-            service = clientManager
-                .getServiceForURI(new URI(release.getTarget()));
-        } catch (NullPointerException | URISyntaxException e) {
-            return ctx.thenPersist(
-                new ReleaseEvent.ErrorRelease(UUID.fromString(entityId()),
-                    System.currentTimeMillis(),
-                    new ValidationException(
-                        Messages.ERROR_INVALID_URL,
-                        Release.FIELD_TARGET).getAsFailure()),
-                event -> ctx.reply(Done.getInstance()));
-        }
-
-        String user = system.settings().config().getString(Config.RUDDER_USER);
-        String password = system.settings().config()
-            .getString(Config.RUDDER_PASSWORD);
-
-        try {
-            return service.update()
-                .handleRequestHeader(BasicAuthFilter.getFilter(user, password))
-                .invoke(release.getAsUpdateRequest(state().getInstance()))
-                .<Persist<ReleaseEvent>>thenApply(
-                    notUsed -> ctx.thenPersist(
-                        new ReleaseEvent.UpdatingRelease(
-                            UUID.fromString(entityId()),
-                            System.currentTimeMillis(),
-                            release),
-                        event -> ctx.reply(Done.getInstance())))
-                .exceptionally(
-                    throwable -> ctx.thenPersist(
-                        new ReleaseEvent.ErrorRelease(
-                            UUID.fromString(entityId()),
-                            System.currentTimeMillis(),
-                            new ConnectionException(
-                                Messages.ERROR_CONNECTION_FAILURE, throwable)
-                                .getAsFailure()),
-                        event -> ctx.reply(Done.getInstance())))
-                .toCompletableFuture().get();
-        } catch (InterruptedException | ExecutionException e) {
-            //TODO Log error
-            return ctx.done();
-        }
+        return ctx.thenPersist(
+            new ReleaseEvent.DeployedRelease(UUID.fromString(entityId()),
+                System.currentTimeMillis(), cmd.getServices()),
+            evt -> ctx.reply(Done.getInstance()));
     }
 
-    private Persist<ReleaseEvent> deleteRelease(
-        ReleaseCommand.DeleteRelease cmd,
+    private Persist<ReleaseEvent> deletedRelease(
+        ReleaseCommand cmd,
         CommandContext<Done> ctx) {
-
-        RudderService service;
-        try {
-            service = clientManager
-                .getServiceForURI(new URI(state().getRelease().getTarget()));
-        } catch (NullPointerException | URISyntaxException e) {
-            return ctx.thenPersist(
-                new ReleaseEvent.ErrorRelease(UUID.fromString(entityId()),
-                    System.currentTimeMillis(),
-                    new ValidationException(
-                        Messages.ERROR_INVALID_URL,
-                        Release.FIELD_TARGET).getAsFailure()),
-                event -> ctx.reply(Done.getInstance()));
-        }
-
-        String user = system.settings().config().getString(Config.RUDDER_USER);
-        String password = system.settings().config()
-            .getString(Config.RUDDER_PASSWORD);
-
-        try {
-            return service.delete(state().getInstance())
-                .handleRequestHeader(BasicAuthFilter.getFilter(user, password))
-                .invoke()
-                .<Persist<ReleaseEvent>>thenApply(
-                    notUsed -> ctx.thenPersist(
-                        new ReleaseEvent.DeletingRelease(
-                            UUID.fromString(entityId()),
-                            System.currentTimeMillis()),
-                        event -> ctx.reply(Done.getInstance())))
-                .exceptionally(
-                    throwable -> ctx.thenPersist(
-                        new ReleaseEvent.ErrorRelease(
-                            UUID.fromString(entityId()),
-                            System.currentTimeMillis(),
-                            new ConnectionException(
-                                Messages.ERROR_CONNECTION_FAILURE, throwable)
-                                .getAsFailure()),
-                        event -> ctx.reply(Done.getInstance())))
-                .toCompletableFuture().get();
-        } catch (InterruptedException | ExecutionException e) {
-            //TODO Log error
-            return ctx.done();
-        }
+        return ctx.thenPersist(
+            new ReleaseEvent.DeletedRelease(UUID.fromString(entityId()),
+                System.currentTimeMillis()),
+            evt -> ctx.reply(Done.getInstance()));
     }
 
-    private void startWatchdog(java.time.Duration interval) {
-
-        if (watchdog != null) {
-            watchdog.cancel();
-        }
-
-        watchdog = system.scheduler()
-            .schedule(Duration.create(0, TimeUnit.SECONDS),
-                Duration.fromNanos(interval.toNanos()), this::updateStatus,
-                system.dispatcher());
+    private Persist<ReleaseEvent> failedRelease(
+        ReleaseCommand.InternalFailRelease cmd, CommandContext<Done> ctx) {
+        return ctx.thenPersist(
+            new ReleaseEvent.FailedRelease(UUID.fromString(entityId()),
+                System.currentTimeMillis(), cmd.getFailure()),
+            evt -> ctx.reply(Done.getInstance()));
     }
 
-    private void updateStatus() {
-        RudderService service;
-        try {
-            service = clientManager
-                .getServiceForURI(new URI(state().getRelease().getTarget()));
-        } catch (NullPointerException | URISyntaxException e) {
-            throw new RuntimeException("Invalid URL");
-        }
-
-        String user = system.settings().config().getString(Config.RUDDER_USER);
-        String password = system.settings().config()
-            .getString(Config.RUDDER_PASSWORD);
-
-        try {
-            ReleaseStatusResponse response = service
-                .status(state().getInstance(),
-                    state().getRelease().getVersion())
-                .handleRequestHeader(BasicAuthFilter.getFilter(user, password))
-                .invoke()
-                .exceptionally(throwable -> {
-                    //TODO Log error
-                    return null;
-                }).toCompletableFuture().get();
-
-            if (response == null) {
-                return;
-            }
-
-            switch (response.getInfo().getStatus().getCode()) {
-            case ReleaseStatusResponse.UNKNOWN:
-            case ReleaseStatusResponse.SUPERSEDED:
-            case ReleaseStatusResponse.FAILED:
-                registry.refFor(getClass(), entityId())
-                    .ask(new ReleaseCommand.InternalErrorRelease(null))
-                    .toCompletableFuture().get();
-                break;
-            case ReleaseStatusResponse.DEPLOYED:
-                Map<String, String> services = extractServices(
-                    response.getInfo().getStatus().getResources());
-                registry.refFor(getClass(), entityId())
-                    .ask(new ReleaseCommand.InternalDeployedRelease(services))
-                    .toCompletableFuture().get();
-                break;
-            case ReleaseStatusResponse.DELETED:
-                registry.refFor(getClass(), entityId())
-                    .ask(ReleaseCommand.InternalDeletedRelease.INSTANCE)
-                    .toCompletableFuture().get();
-                break;
-            }
-        } catch (InterruptedException | ExecutionException e) {
-            throw new RuntimeException("Execution interrupted or aborted");
-        }
-    }
-
-    private Map<String, String> extractServices(String resources) {
-        return null;
-    }
-
-    private void addWatchdogHandler(BehaviorBuilder builder) {
-
-        builder.setCommandHandler(ReleaseCommand.InternalDeployedRelease.class,
-            (cmd, ctx) -> ctx.thenPersist(
-                new ReleaseEvent.DeployedRelease(UUID.fromString(entityId()),
-                    System.currentTimeMillis(), cmd.getServices()),
-                event -> ctx.reply(Done.getInstance())));
-
-        builder.setCommandHandler(ReleaseCommand.InternalDeletedRelease.class,
-            (cmd, ctx) -> ctx.thenPersist(
-                new ReleaseEvent.DeletedRelease(UUID.fromString(entityId()),
-                    System.currentTimeMillis()),
-                event -> ctx.reply(Done.getInstance())));
-
-        builder.setCommandHandler(ReleaseCommand.InternalErrorRelease.class,
-            (cmd, ctx) -> ctx.thenPersist(
-                new ReleaseEvent.ErrorRelease(UUID.fromString(entityId()),
-                    System.currentTimeMillis(), cmd.getFailure()),
-                event -> ctx.reply(Done.getInstance())));
-
-        builder.setEventHandlerChangingBehavior(
-            ReleaseEvent.DeployedRelease.class,
-            event -> deployed(state().deployed(event))
-        );
-
-        builder.setEventHandlerChangingBehavior(
-            ReleaseEvent.DeletedRelease.class,
-            event -> deleted(state().deleted(event))
-        );
-
-        builder.setEventHandlerChangingBehavior(
-            ReleaseEvent.ErrorRelease.class,
-            event -> error(state().error(event))
-        );
+    private Persist<ReleaseEvent> errorRelease(
+        ReleaseCommand.InternalFailRelease cmd, CommandContext<Done> ctx) {
+        return ctx.thenPersist(
+            new ReleaseEvent.ErrorRelease(UUID.fromString(entityId()),
+                System.currentTimeMillis(), cmd.getFailure()),
+            evt -> ctx.reply(Done.getInstance()));
     }
 
     private void addGetReleaseHandler(BehaviorBuilder builder) {
         builder.setReadOnlyCommandHandler(ReleaseCommand.GetRelease.class,
-            this::getRelease);
-    }
+            (cmd, ctx) -> ctx.reply(state().getAsAPI()));
 
-    private void getRelease(ReleaseCommand.GetRelease cmd,
-        ReadOnlyCommandContext<ProvisioningRelease> ctx) {
-        ctx.reply(state().getAsAPI());
+        builder.setReadOnlyCommandHandler(
+            ReleaseCommand.InternalGetReleaseState.class,
+            (cmd, ctx) -> ctx.reply(state()));
     }
 
     private void alreadyDone(Object cmd, ReadOnlyCommandContext<Done> ctx) {
