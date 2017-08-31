@@ -4,12 +4,8 @@ The provisioning-service project is a microservice for managing applications dep
 The provisioning microservice connects to a [Rudder REST Proxy](https://github.com/servicecatalog/rudder) deployed in the cluster, 
 which interfaces the Helm Charts Repositories and the Helm Tiller Server which manages the software installation.
 Popular software packages for testing can be found in the [kubernetes charts](https://github.com/kubernetes/charts) repository.
-
-## Overview
-
 The microservice uses the [service-tools](https://github.com/servicecatalog/service-tools) framework based on Commander and Eventsouring patterns with Kafka Streams.
 
-TODO
 
 ## Getting Started
 
