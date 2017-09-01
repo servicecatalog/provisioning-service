@@ -1,3 +1,4 @@
+[![Build Status](https://travis-ci.org/servicecatalog/provisioning-service.svg?branch=master)](https://travis-ci.org/servicecatalog/provisioning-service)
 # provisioning-service
 
 The provisioning-service project is a microservice for managing applications deployment and lifecycle on Kubernetes Cluster. The software to be deployed and the description of the Kubernetes resources are packaged as Helm Charts.
