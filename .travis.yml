@@ -8,18 +8,18 @@ install:
 - cd ../..
 script:
 - mvn install cobertura:cobertura -f ./oscm-provisioning-build/pom.xml
-after_success:
-  #- bash <(curl -s https://codecov.io/bash
-  - docker login -e $DOCKER_EMAIL -u $DOCKER_USER -p $DOCKER_PASS
-  - export REPO=servicecatalog/provisioning-service
-  - export TAG=`if [ "$TRAVIS_BRANCH" == "master" ]; then echo "latest"; else echo $TRAVIS_BRANCH ; fi`
-  - docker build -f /oscm-provisioning-build/Dockerfile -t $REPO:$COMMIT .
-  - docker tag $REPO:$COMMIT $REPO:$TAG
-  - docker tag $REPO:$COMMIT $REPO:travis-$TRAVIS_BUILD_NUMBER
-  - docker push $REPO
 env:
   global:
   - secure: UJOqkazmqUwQTamoToyDzsDq+zHks6+UCF4mUTgD84mirqqSYTP9SfVvbMh8BG+Y/EZSjldB9JCFWMkcTdqDFQ3ROdFI9cieahWEIdfSh0rsoA9KaneJTkk0K7siBzj/4rli5NJrbuScU2QHC3L6ll08DyzzwniMdqR2zJ0SziGNq2u9t+NwAZt5MsUbE9bRQZ8TcqiUtp4tpU4GMz8PX2ZJRelMFpAwG9OujcoOcXeDgrBvvVEAPdM8HyItxH+rTiBBalBGr4F1D1f8fEf34oxvRlQb99BgLc4KyOILJgW5iigMpfFtbxEQEyMySLE9BCNFQHK8Sl0fvKY3MCqAKEgiMCw/bdzn3eb6bZzONFYuqUhV1N+LyUg0v5NU9xaRo+s8VAeiXifjm5gGBPsdbBga7WsQ2+jJCC04HDxjJTbsW/57vftY3RVv30ziGfL72FHXh9lst36pVEJznOeFHhHBP2VEPnaRdcuDhe1RioEbVqrlI0WT1E3KBBefp3B10uXwK/qsVzQP2TgcaqxaJnRwQB8tgGhEAeAbuuvKIhuZ4kQsiujrBzpjzc2EBj+6t9DFWv8pRrcJ91X12nSuGd5bc9KQdyGHyzNdiNzjaKv1xUvn6C9ZR19EgVuDQ+Hil97m4LMRuJo3arT2FmXgizLEmsqmFH24yYOH+GELR40=
   - secure: epunCXkmpQJmrlBqFtEKH8Wxq1g94hdI6d/L9VGp6oSy03w24xfdjXuK4YvcDgjsCNfNw2YSz/BqaFpHwMK62lh4crBWMvU+fmW4bONhO8Ih5UwzOYafHncZPMqq5z/RJ1GSP8QEvXE5v4krFcNXxkB5h1ENkndfDeGn4SO280sGUz40b8Wlmx2OrI3fbihRx9VU83oQl5p3SbPE1hu0LM6tyhsYn6RHdQJu74J9Xu9Fp2imfWSe6goJYdr+l55iiv07YTxmH0GAs5YMiYZzIUXc0Gp3XXhlmveIXh8hQcP+eRm/EvfbHXoIWKug4vBeq4qNcLxXYXqLg8YSEZ7faDoB7fOEmSB3AK9sBuqXPNhQLGYJMiuAcHwD4zG6jSAt4HofvZK2iH9WcGtp6cUK/reaWVqBsi0wvahtAa5A1l0sO44j8KSJVj+Ulg2Sdl/G+vhT9IVHzDlgJeLcvC0ilENzZBmNe13tDypubgODr+MaLwYCHxqX4u2HZsMaRP79xNhBHvfDkWDMP5SEGNo0H7Imjm6WtbWO1RtS+jn9YwFfiLZzQdxdefohbW2Ekw6ZKnzSgk/1jplmknTld0YNwTJTzhPBufaIpuienR2SrktwpbnqVKuMbdWvEldmRhy0bppsn08G01z6jiUQkTM4TwRv0qYhkjMwZfQY5HIluX8=
   - secure: ZYT8N7aYLdPxULY9DQuAYle0D4Zr3/pQvea6fsdMspN9gYqjb60RcpgLvy7P6lOZ9AkHEov0hZeN+88PQSSHuu1dlwuqQYszY2mD2P+ZGYo4Ftd/TDLOyv6tnp6SEccknzG8Lb0PWRCR4IrN7B1JymF8Gj3nV8eD0MDCxMgzT9h9p2tzJopSrCLcS0oX7Tita3oQZFofPeo8/QNEX6jEHuul5wMSg4x69GxkVwMWw5vTLMErucQwu+IxSyhXmpaL85tOSWe+x8HYzpXkTAlAyXboIL2nsBkcs6lOQPxUQpHki+wCGObi44AWzhSlPkF1iIR6jEswxHbQH5jGvgbHSnFuEEGZ6lJkWKnYLR/9tKpbrFZxTbEj5y0k0ZsSDySM2TlbNXjtjMH7ZevpgPMJ+nJnl0rpqMzuXYvQJhw4ccPFAXwGjpfvQkm96DLe6Lk9iGEmAu44QOp4IVy9gnvr0E/DRPK687YBDNwFWVmbmzMZ6MbsIBlnXjMKOOkcS4oi2JOvhHO2HH7l+WDLrKlmdaDwnJW/e4YgeAJlwjuC4ice0qJY7ngAcb/QsoW29H1N++hxBqPl3vX8+OGpa9E88Z8o09cX0rOyr7YoxseXnyxVsYRbfQZMQF6Q0z8CVuGtO5DkdSRNMylJkvVWUyPy0xulZuost88aUAfn8gIM0+M=
   - COMMIT=${TRAVIS_COMMIT::8}
+after_success:
+  #- bash <(curl -s https://codecov.io/bash
+  - docker login -u="$DOCKER_USER" -p="$DOCKER_PASS"
+  - export REPO=servicecatalog/provisioning-service
+  - export TAG=`if [ "$TRAVIS_BRANCH" == "master" ]; then echo "latest"; else echo $TRAVIS_BRANCH ; fi`
+  - docker build -f /oscm-provisioning-build/Dockerfile -t $REPO:$COMMIT .
+  - docker tag $REPO:$COMMIT $REPO:$TAG
+  - docker tag $REPO:$COMMIT $REPO:travis-$TRAVIS_BUILD_NUMBER
+  - docker push $REPO
