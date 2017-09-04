@@ -1,4 +1,6 @@
 language: java
+#dist: trusty
+#jdk: openjdk8
 jdk: oraclejdk8
 install:
 - git clone --depth=1 --branch=master https://github.com/servicecatalog/service-tools.git
@@ -19,7 +21,7 @@ after_success:
   - docker login -u="$DOCKER_USER" -p="$DOCKER_PASS"
   - export REPO=servicecatalog/provisioning-service
   - export TAG=`if [ "$TRAVIS_BRANCH" == "master" ]; then echo "latest"; else echo $TRAVIS_BRANCH ; fi`
-  - docker build -f /oscm-provisioning-build/Dockerfile -t $REPO:$COMMIT .
+  - docker build -f oscm-provisioning-build/Dockerfile -t $REPO:$COMMIT .
   - docker tag $REPO:$COMMIT $REPO:$TAG
   - docker tag $REPO:$COMMIT $REPO:travis-$TRAVIS_BUILD_NUMBER
   - docker push $REPO
