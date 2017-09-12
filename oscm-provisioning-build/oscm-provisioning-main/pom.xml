@@ -33,6 +33,11 @@
               </descriptorRefs>
               <finalName>oscm-provisioning</finalName>
               <appendAssemblyId>false</appendAssemblyId>
+              <archive>
+                <manifest>
+                  <mainClass>org.oscm.provisioning.main.ProvisioningApplicationServer</mainClass>
+                </manifest>
+              </archive>
             </configuration>
           </execution>
         </executions>
