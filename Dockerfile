@@ -1,4 +1,4 @@
-FROM openjdk:8u131-jdk-alpine
+FROM openjdk:8u131-jdk
 
 COPY oscm-provisioning-build/oscm-provisioning-main/target/oscm-provisioning.jar /opt/jar/
 
