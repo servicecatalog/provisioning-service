@@ -10,5 +10,4 @@ The microservice uses the [oscm microservices framework](https://github.com/serv
 
 ## Getting Started
 
-TODO
-
+See [here](https://github.com/servicecatalog/oscm-helm) detailed information on how to integrate this application as provisioning system for OSCM.
