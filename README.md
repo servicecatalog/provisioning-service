@@ -8,6 +8,6 @@ Popular software packages for testing can be found in the [kubernetes charts](ht
 The microservice uses the [oscm microservices framework](https://github.com/servicecatalog/service-tools) framework based on Commander and Eventsouring patterns with Kafka Streams.
 
 
-## Getting Started
+## Integration with OSCM
 
 See [here](https://github.com/servicecatalog/oscm-helm) detailed information on how to integrate this application as provisioning system for OSCM.
