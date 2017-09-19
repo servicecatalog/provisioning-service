@@ -12,16 +12,20 @@ package org.oscm.provisioning.impl;
 
 import akka.Done;
 import akka.actor.ActorSystem;
-import akka.persistence.cassandra.session.javadsl.CassandraSession;
 import akka.stream.Materializer;
 import com.datastax.driver.core.BoundStatement;
 import com.datastax.driver.core.PreparedStatement;
+import com.lightbend.lagom.javadsl.api.transport.TransportErrorCode;
+import com.lightbend.lagom.javadsl.api.transport.TransportException;
 import com.lightbend.lagom.javadsl.persistence.*;
 import com.lightbend.lagom.javadsl.persistence.cassandra.CassandraReadSide;
+import com.lightbend.lagom.javadsl.persistence.cassandra.CassandraSession;
+import org.oscm.lagom.enums.Messages;
+import org.oscm.lagom.exceptions.InternalException;
 import org.oscm.provisioning.impl.data.*;
-import org.oscm.provisioning.impl.data.ReleaseCommand.InternalCommitRelease;
-import org.oscm.provisioning.impl.data.ReleaseCommand.InternalFailRelease;
+import org.oscm.provisioning.impl.data.ReleaseCommand.*;
 import org.oscm.rudder.api.RudderService;
+import org.oscm.rudder.api.data.ReleaseStatusResponse;
 import org.pcollections.PSequence;
 import scala.concurrent.duration.Duration;
 import scala.concurrent.duration.FiniteDuration;
@@ -30,18 +34,32 @@ import javax.inject.Inject;
 import javax.inject.Singleton;
 import java.net.URI;
 import java.net.URISyntaxException;
-import java.util.Collections;
-import java.util.List;
-import java.util.Map;
-import java.util.UUID;
+import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.TimeUnit;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 
 import static com.lightbend.lagom.javadsl.persistence.cassandra.CassandraReadSide.completedStatement;
 
 @Singleton
 public class ReleaseScheduler {
+
+    private static final String REGEX_SERVICE = "v1/Service";
+    private static final String REGEX_NEXT = "==>";
+    private static final String REGEX_NONE = "<none>";
+    private static final String REGEX_NODES = "<nodes>";
+    private static final String REGEX_REPLACE = "<nodes>";
+
+    private static final int SERVICE_COLUMNS = 5;
+    private static final int SERVICE_COLUMN_NAME = 0;
+    private static final int SERVICE_COLUMN_EXT_IP = 2;
+    private static final int SERVICE_COLUMN_PORTS = 3;
+
+    private static final String KEY_IP = "ip";
+    private static final String KEY_PORT = "port";
 
     private final RudderClientManager rudderClientManager;
     private final CassandraSession session;
@@ -88,10 +106,8 @@ public class ReleaseScheduler {
 
     private void serveRelease(ReleaseStatus... statuses) {
         try {
-            //TODO add tags to binding
-            session.select(
-                "SELECT id, status FROM releaseSchedule WHERE tag IN ? AND status IN ?",
-                statuses)
+            session.select("SELECT id, status FROM releaseSchedule WHERE tag IN ? AND status IN ?",
+                ReleaseEvent.TAG.allTags(), statuses)
                 .runForeach(row -> {
                     UUID id = row.getUUID("id");
                     ReleaseStatus status = row
@@ -100,7 +116,7 @@ public class ReleaseScheduler {
                     PersistentEntityRef<ReleaseCommand> ref = registry
                         .refFor(ReleaseEntity.class, id.toString());
 
-                    ref.ask(ReleaseCommand.InternalGetReleaseState.INSTANCE).thenCompose(
+                    ref.ask(InternalGetReleaseState.INSTANCE).thenCompose(
                         state -> {
                             Release release = state.getRelease();
                             String instance = state.getInstance();
@@ -117,80 +133,19 @@ public class ReleaseScheduler {
 
                             switch (status) {
                             case INSTALLING:
-                                return service.install()
-                                    .invoke(
-                                        release.getAsInstallRequest(state.getInstance()))
-                                    .thenCompose(
-                                        notUsed ->
-                                            ref.ask(new InternalCommitRelease(null)))
-                                    .exceptionally(
-                                        throwable -> {
-                                            //TODO add custom exception
-                                            ref.ask(new InternalFailRelease(null));
-                                            return Done.getInstance();
-                                        });
+                                return installRelease(service, ref, release, state);
                             case UPDATING:
-                                return service.update()
-                                    .invoke(
-                                        release.getAsUpdateRequest(state.getInstance()))
-                                    .thenCompose(
-                                        notUsed -> ref
-                                            .ask(new ReleaseCommand.InternalCommitRelease(null)))
-                                    .exceptionally(
-                                        throwable -> {
-                                            //TODO add custom exception
-                                            ref.ask(new InternalFailRelease(null));
-                                            return Done.getInstance();
-                                        });
+                                return updateRelease(service, ref, release, state);
                             case DELETING:
-                                return service.delete(instance)
-                                    .invoke().thenCompose(
-                                        notUsed -> ref
-                                            .ask(new ReleaseCommand.InternalCommitRelease(null)))
-                                    .exceptionally(
-                                        throwable -> {
-                                            //TODO add custom exception
-                                            ref.ask(new InternalFailRelease(null));
-                                            return Done.getInstance();
-                                        });
+                                return deleteRelease(service, ref, instance);
                             case PENDING:
-                                return service.status(instance, release.getVersion())
-                                    .invoke()
-                                    .thenCompose(
-                                        response -> {
-                                            Map<String, String> services = extractServices(
-                                                response.getInfo().getStatus().getResources());
-
-                                            return ref.ask(
-                                                new ReleaseCommand.InternalCommitRelease(services));
-                                        })
-                                    .exceptionally(
-                                        throwable -> {
-                                            //TODO add custom exception
-                                            ref.ask(new InternalFailRelease(null));
-                                            return Done.getInstance();
-                                        });
+                                return commitRelease(service, ref, release, instance, target);
                             case DEPLOYED:
-                                return service.status(instance, release.getVersion())
-                                    .invoke()
-                                    .thenCompose(
-                                        response -> {
-
-                                            return ref.ask(
-                                                new ReleaseCommand.InternalFailRelease(null));
-                                        })
-                                    .exceptionally(
-                                        throwable -> {
-                                            //TODO log error
-                                            return Done.getInstance();
-                                        });
-
+                                return checkRelease(service, ref, release, instance);
                             default:
                                 return CompletableFuture.completedFuture(Done.getInstance());
                             }
-
                         });
-
                 }, materializer).exceptionally(throwable -> {
                 //TODO Log error
                 return Done.getInstance();
@@ -200,9 +155,216 @@ public class ReleaseScheduler {
         }
     }
 
-    private Map<String, String> extractServices(String resources) {
-        //TODO
-        return Collections.emptyMap();
+    private CompletionStage<Done> installRelease(RudderService service,
+        PersistentEntityRef<ReleaseCommand> ref, Release release, ReleaseState state) {
+        return service.install()
+            .invoke(release.getAsInstallRequest(state.getInstance()))
+            .thenCompose(notUsed -> ref.ask(InternalInitiateRelease.INSTANCE))
+            .exceptionally(
+                throwable -> {
+                    if (throwable instanceof TransportException) {
+                        TransportException te = (TransportException) throwable;
+
+                        if (te.errorCode() == TransportErrorCode.InternalServerError) {
+                            InternalException ie = new InternalException(
+                                Messages.ERROR_BAD_RESPONSE, te); // TODO replace exception
+
+                            ref.ask(new InternalFailRelease(ie.getAsFailure()));
+                        }
+                    }
+
+                    return Done.getInstance();
+                });
+    }
+
+    private CompletionStage<Done> updateRelease(RudderService service,
+        PersistentEntityRef<ReleaseCommand> ref, Release release, ReleaseState state) {
+        return service.update()
+            .invoke(release.getAsUpdateRequest(state.getInstance()))
+            .thenCompose(notUsed -> ref.ask(InternalInitiateRelease.INSTANCE))
+            .exceptionally(
+                throwable -> {
+                    if (throwable instanceof TransportException) {
+                        TransportException te = (TransportException) throwable;
+
+                        if (te.errorCode() == TransportErrorCode.InternalServerError) {
+                            InternalException ie = new InternalException(
+                                Messages.ERROR_BAD_RESPONSE, te); // TODO replace exception
+
+                            ref.ask(new InternalFailRelease(ie.getAsFailure()));
+                        }
+                    }
+
+                    return Done.getInstance();
+                });
+    }
+
+    private CompletionStage<Done> deleteRelease(RudderService service,
+        PersistentEntityRef<ReleaseCommand> ref, String instance) {
+        return service.delete(instance)
+            .invoke().thenCompose(notUsed -> ref.ask(InternalInitiateRelease.INSTANCE))
+            .exceptionally(
+                throwable -> {
+                    if (throwable instanceof TransportException) {
+                        TransportException te = (TransportException) throwable;
+
+                        if (te.errorCode() == TransportErrorCode.InternalServerError) {
+                            InternalException ie = new InternalException(
+                                Messages.ERROR_BAD_RESPONSE, te); // TODO replace exception
+
+                            ref.ask(new InternalFailRelease(ie.getAsFailure()));
+                        }
+                    }
+
+                    return Done.getInstance();
+                });
+    }
+
+    private CompletionStage<Done> commitRelease(RudderService service,
+        PersistentEntityRef<ReleaseCommand> ref, Release release, String instance, URI target) {
+        return service.status(instance, release.getVersion())
+            .invoke()
+            .thenCompose(
+                response -> {
+                    Integer code = response.getInfo().getStatus().getCode();
+
+                    switch (code) {
+                    case ReleaseStatusResponse.UNKNOWN:
+                        return CompletableFuture.completedFuture(Done.getInstance());
+                    case ReleaseStatusResponse.DEPLOYED:
+                        Map<String, String> services = extractServices(release.getEndpoints(),
+                            response.getInfo().getStatus().getResources(), instance,
+                            target.getHost());
+                        return ref.ask(
+                            new InternalConfirmRelease(services));
+                    case ReleaseStatusResponse.DELETED:
+                        return ref.ask(InternalDeleteRelease.INSTANCE);
+                    default:
+                        InternalException ie = new InternalException(
+                            Messages.ERROR_BAD_RESPONSE); // TODO replace exception
+
+                        return ref.ask(
+                            new InternalFailRelease(ie.getAsFailure()));
+                    }
+                })
+            .exceptionally(
+                throwable -> {
+                    if (throwable instanceof TransportException) {
+                        TransportException te = (TransportException) throwable;
+
+                        if (te.errorCode() == TransportErrorCode.InternalServerError) {
+                            InternalException ie = new InternalException(
+                                Messages.ERROR_BAD_RESPONSE, te); // TODO replace exception
+
+                            ref.ask(new InternalFailRelease(ie.getAsFailure()));
+                        }
+                    }
+
+                    return Done.getInstance();
+                });
+    }
+
+    private CompletionStage<Done> checkRelease(RudderService service,
+        PersistentEntityRef<ReleaseCommand> ref, Release release, String instance) {
+        return service.status(instance, release.getVersion())
+            .invoke()
+            .thenCompose(
+                response -> {
+                    Integer code = response.getInfo().getStatus().getCode();
+
+                    switch (code) {
+                    case ReleaseStatusResponse.DEPLOYED:
+                        return CompletableFuture.completedFuture(Done.getInstance());
+                    case ReleaseStatusResponse.DELETED:
+                        return ref.ask(InternalDeleteRelease.INSTANCE);
+                    default:
+                        InternalException ie = new InternalException(
+                            Messages.ERROR_BAD_RESPONSE); // TODO replace exception
+                        return ref.ask(new InternalFailRelease(ie.getAsFailure()));
+                    }
+                })
+            .exceptionally(
+                throwable -> {
+                    if (throwable instanceof TransportException) {
+                        TransportException te = (TransportException) throwable;
+
+                        if (te.errorCode() == TransportErrorCode.InternalServerError) {
+                            InternalException ie = new InternalException(
+                                Messages.ERROR_BAD_RESPONSE, te); // TODO replace exception
+
+                            ref.ask(new InternalFailRelease(ie.getAsFailure()));
+                        }
+                    }
+
+                    return Done.getInstance();
+                });
+    }
+
+    private Map<String, String> extractServices(Map<String, String> templates, String resources,
+        String instance, String host) {
+
+        if (templates == null) {
+            return null;
+        }
+
+        int begin = resources.indexOf(REGEX_SERVICE);
+        int end = resources.indexOf(REGEX_NEXT, begin);
+
+        if (begin < 0) {
+            return Collections.emptyMap();
+        }
+
+        if (end < 0) {
+            end = resources.length() - 1;
+        }
+
+        String[] words = resources.substring(begin, end).split(" ");
+
+        HashMap<String, String> replacements = new HashMap<>();
+
+        for (int i = SERVICE_COLUMNS + 1; i < words.length; i += SERVICE_COLUMNS) {
+
+            String name = words[i + SERVICE_COLUMN_NAME];
+            String extIp = words[i + SERVICE_COLUMN_EXT_IP];
+            String ports = words[i + SERVICE_COLUMN_PORTS];
+
+            name = name.replace(instance, "");
+
+            List<String> portList = Arrays.stream(ports.split(","))
+                .filter(port -> port.contains(":"))
+                .map(port -> port.split("[:/]")[1]).collect(Collectors.toList());
+
+            if (extIp.matches(REGEX_NONE) || portList.isEmpty()) {
+                continue;
+            } else if (extIp.matches(REGEX_NODES)) {
+                extIp = host;
+            }
+
+            replacements.put(name + ":" + KEY_IP, extIp);
+
+            for (int j = 0; j < portList.size(); j++) {
+                replacements.put(name + ":" + KEY_PORT + ":" + j, extIp);
+            }
+        }
+
+        HashMap<String, String> endpoints = new HashMap<>(templates);
+
+        Pattern pattern = Pattern.compile(REGEX_REPLACE);
+
+        endpoints.replaceAll((key, value) -> {
+            Matcher matcher = pattern.matcher(value);
+            StringBuffer sb = new StringBuffer();
+
+            while (matcher.find()) {
+                String replacement = replacements.get(matcher.group(1));
+                matcher.appendReplacement(sb, replacement != null ? replacement : "null");
+            }
+            matcher.appendTail(sb);
+
+            return sb.toString();
+        });
+
+        return endpoints;
     }
 
     public static class ReleaseProcessor
@@ -254,11 +416,11 @@ public class ReleaseScheduler {
             return session.executeCreateTable(
                 "CREATE TABLE IF NOT EXISTS releaseSchedule ( " +
                     "id uuid, " +
-                    "tag string, " +
-                    "status string, " +
+                    "tag varchar, " +
+                    "status varchar, " +
                     "PRIMARY KEY (id)" +
-                    ")").thenCompose(d ->
-                session.executeCreateTable(
+                    ")")
+                .thenCompose(d -> session.executeCreateTable(
                     "CREATE INDEX IF NOT EXISTS releaseScheduleIndex " +
                         "ON releaseSchedule (tag)")
             );

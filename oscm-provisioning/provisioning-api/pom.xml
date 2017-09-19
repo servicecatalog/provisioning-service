@@ -18,10 +18,6 @@
 
     <dependencies>
         <dependency>
-            <groupId>com.lightbend.lagom</groupId>
-            <artifactId>lagom-javadsl-api_2.11</artifactId>
-        </dependency>
-        <dependency>
             <groupId>org.oscm.lagom</groupId>
             <artifactId>oscm-lagom</artifactId>
         </dependency>

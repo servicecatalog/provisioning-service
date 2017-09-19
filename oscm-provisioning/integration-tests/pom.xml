@@ -21,6 +21,23 @@
             <groupId>${project.groupId}</groupId>
             <artifactId>provisioning-api</artifactId>
             <version>${project.version}</version>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>${project.groupId}</groupId>
+            <artifactId>provisioning-impl</artifactId>
+            <version>${project.version}</version>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>com.lightbend.lagom</groupId>
+            <artifactId>lagom-javadsl-testkit_2.11</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>com.lightbend.lagom</groupId>
+            <artifactId>lagom-javadsl-persistence-cassandra_2.11</artifactId>
+            <scope>test</scope>
         </dependency>
         <dependency>
             <groupId>com.lightbend.lagom</groupId>

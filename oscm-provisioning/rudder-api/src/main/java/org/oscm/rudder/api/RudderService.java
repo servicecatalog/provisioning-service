@@ -45,6 +45,6 @@ public interface RudderService extends Service {
                 this::delete),
             restCall(Method.GET,
                 "/api/v1/releases/:release/:version/status", this::status)
-        ).withCircuitBreaker(CircuitBreaker.none());
+        ).withCircuitBreaker(CircuitBreaker.perNode());
     }
 }

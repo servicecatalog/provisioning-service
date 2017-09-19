@@ -28,10 +28,6 @@
         </dependency>
         <dependency>
             <groupId>com.lightbend.lagom</groupId>
-            <artifactId>lagom-javadsl-persistence-cassandra_2.11</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>com.lightbend.lagom</groupId>
             <artifactId>lagom-logback_2.11</artifactId>
         </dependency>
         <dependency>
@@ -51,49 +47,63 @@
             <artifactId>lagom-javadsl-client_2.11</artifactId>
         </dependency>
         <dependency>
+            <groupId>com.lightbend</groupId>
+            <artifactId>lagom13-java-service-locator-dns_2.11</artifactId>
+        </dependency>
+        <dependency>
             <groupId>com.lightbend.lagom</groupId>
             <artifactId>lagom-javadsl-testkit_2.11</artifactId>
             <scope>test</scope>
-        </dependency>
-        <dependency>
-            <groupId>com.typesafe.conductr</groupId>
-            <artifactId>${conductr.lib.name}</artifactId>
         </dependency>
     </dependencies>
 
     <build>
         <plugins>
             <plugin>
-                <artifactId>maven-assembly-plugin</artifactId>
-                <configuration>
-                    <descriptors>
-                        <descriptor>src/assembly/conductr-bundle.xml
-                        </descriptor>
-                    </descriptors>
-                </configuration>
-                <executions>
-                    <execution>
-                        <id>conductr-bundle</id>
-                        <phase>package</phase>
-                        <goals>
-                            <goal>single</goal>
-                        </goals>
-                    </execution>
-                </executions>
-            </plugin>
-            <plugin>
                 <groupId>com.lightbend.lagom</groupId>
                 <artifactId>lagom-maven-plugin</artifactId>
                 <configuration>
                     <lagomService>true</lagomService>
                 </configuration>
-                <executions>
-                    <execution>
-                        <goals>
-                            <goal>renameConductRBundle</goal>
-                        </goals>
-                    </execution>
-                </executions>
+            </plugin>
+            <plugin>
+                <groupId>io.fabric8</groupId>
+                <artifactId>docker-maven-plugin</artifactId>
+                <version>0.20.1</version>
+                <configuration>
+                    <images>
+                        <image>
+                            <name>%g/%a:%l</name>
+                            <build>
+                                <from>openjdk:8-jre-alpine</from>
+                                <tags>
+                                    <tag>latest</tag>
+                                    <tag>${project.version}</tag>
+                                </tags>
+                                <assembly>
+                                    <descriptorRef>artifact-with-dependencies</descriptorRef>
+                                </assembly>
+                                <entryPoint>
+                                    java -cp '/maven/*' \
+                                    -Dplay.crypto.secret="$(APPLICATION_SECRET:-none)" \
+                                    -Dplay.akka.actor-system="$(AKKA_ACTOR_SYSTEM_NAME:-${project.name})"\
+                                    -Dhttp.address="$HTTP_BIND_IP" \
+                                    -Dhttp.port="$HTTP_BIND_PORT" \
+                                    -Dakka.actor.provider=cluster \
+                                    -Dakka.remote.netty.tcp.hostname="$(eval "echo \
+                                    $AKKA_REMOTING_BIND_HOST")" \
+                                    -Dakka.remote.netty.tcp.port="$AKKA_REMOTING_BIND_PORT" \
+                                    $(IFS=','; I=0; for NODE in $AKKA_SEED_NODES; do echo \
+                                    "-Dakka.cluster.seed-nodes.$I=akka.tcp://$AKKA_ACTOR_SYSTEM_NAME@$NODE";\
+                                    I=$[$I+1]; done) -Dakka.io.dns.resolver=async-dns \
+                                    -Dakka.io.dns.async-dns.resolve-srv=true \
+                                    -Dakka.io.dns.async-dns.resolv-conf=on \
+                                    play.core.server.ProdServerStart
+                                </entryPoint>
+                            </build>
+                        </image>
+                    </images>
+                </configuration>
             </plugin>
         </plugins>
     </build>

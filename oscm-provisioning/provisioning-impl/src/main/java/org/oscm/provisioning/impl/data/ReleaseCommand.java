@@ -51,14 +51,19 @@ public interface ReleaseCommand extends Jsonable {
         INSTANCE
     }
 
+    public enum InternalInitiateRelease
+        implements ReleaseCommand, PersistentEntity.ReplyType<Done> {
+        INSTANCE
+    }
+
     @Immutable
-    public final class InternalCommitRelease
+    public final class InternalConfirmRelease
         implements ReleaseCommand, PersistentEntity.ReplyType<Done> {
 
         private Map<String, String> services;
 
         @JsonCreator
-        public InternalCommitRelease(
+        public InternalConfirmRelease(
             @JsonProperty(FIELD_SERVICES) Map<String, String> services) {
             this.services = services;
         }

@@ -36,7 +36,7 @@ public abstract class ReleaseEvent extends Identity implements Jsonable,
 
     public static final String FIELD_RELEASE = "release";
     public static final String FIELD_INSTANCE = "instance";
-    public static final String FIELD_SERVICES = "services";
+    public static final String FIELD_ENDPOINTS = "endpoints";
     public static final String FIELD_FAILURE = "failure";
 
     public ReleaseEvent(UUID id, Long timestamp) {
@@ -118,20 +118,19 @@ public abstract class ReleaseEvent extends Identity implements Jsonable,
     @Immutable
     public static final class DeployedRelease extends ReleaseEvent {
 
-        private Map<String, String> services;
+        private Map<String, String> endpoints;
 
         @JsonCreator
         public DeployedRelease(@JsonProperty(FIELD_ID) UUID id,
             @JsonProperty(FIELD_TIMESTAMP) Long timestamp,
-            @JsonProperty(FIELD_SERVICES)
-                Map<String, String> services) {
+            @JsonProperty(FIELD_ENDPOINTS) Map<String, String> endpoints) {
             super(id, timestamp);
-            this.services = services;
+            this.endpoints = endpoints;
         }
 
-        @JsonProperty(FIELD_SERVICES)
-        public Map<String, String> getServices() {
-            return Collections.unmodifiableMap(services);
+        @JsonProperty(FIELD_ENDPOINTS)
+        public Map<String, String> getEndpoints() {
+            return Collections.unmodifiableMap(endpoints);
         }
     }
 

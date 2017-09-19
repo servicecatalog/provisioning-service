@@ -30,6 +30,7 @@ public class Release {
     public static final String FIELD_VERSION = "version";
     public static final String FIELD_LABELS = "labels";
     public static final String FIELD_PARAMETERS = "parameters";
+    public static final String FIELD_ENDPOINTS = "endpoints";
 
     @JsonCreator
     public Release(@JsonProperty(FIELD_TARGET) String target,
@@ -38,7 +39,8 @@ public class Release {
         @JsonProperty(FIELD_TEMPLATE) String template,
         @JsonProperty(FIELD_VERSION) String version,
         @JsonProperty(FIELD_LABELS) Map<String, String> labels,
-        @JsonProperty(FIELD_PARAMETERS) Map<String, Object> parameters) {
+        @JsonProperty(FIELD_PARAMETERS) Map<String, Object> parameters,
+        @JsonProperty(FIELD_ENDPOINTS) Map<String, String> endpoints) {
         this.target = target;
         this.namespace = namespace;
         this.repository = repository;
@@ -46,6 +48,7 @@ public class Release {
         this.version = version;
         this.labels = labels;
         this.parameters = parameters;
+        this.endpoints = endpoints;
     }
 
     public Release(CoreSubscription subscription) {
@@ -57,6 +60,7 @@ public class Release {
         this.namespace = subscription.getNamespace();
         this.labels = subscription.getLabels();
         this.parameters = subscription.getParameters();
+        this.endpoints = subscription.getEndpoints();
 
         if (subscription.getTemplate() != null) {
             this.repository = subscription.getTemplate().getRepository();
@@ -78,6 +82,8 @@ public class Release {
     private Map<String, String> labels;
 
     private Map<String, Object> parameters;
+
+    private Map<String, String> endpoints;
 
     @JsonProperty(FIELD_TARGET)
     public String getTarget() {
@@ -112,6 +118,11 @@ public class Release {
     @JsonProperty(FIELD_PARAMETERS)
     public Map<String, Object> getParameters() {
         return Collections.unmodifiableMap(parameters);
+    }
+
+    @JsonProperty(FIELD_ENDPOINTS)
+    public Map<String, String> getEndpoints() {
+        return Collections.unmodifiableMap(endpoints);
     }
 
     public InstallReleaseRequest getAsInstallRequest(String instance) {

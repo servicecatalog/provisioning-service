@@ -11,9 +11,11 @@
 package org.oscm.provisioning.impl;
 
 import akka.Done;
+import akka.NotUsed;
 import akka.japi.Pair;
 import akka.stream.javadsl.Flow;
 import akka.stream.javadsl.Source;
+import com.lightbend.lagom.javadsl.api.ServiceCall;
 import com.lightbend.lagom.javadsl.api.broker.Topic;
 import com.lightbend.lagom.javadsl.broker.TopicProducer;
 import com.lightbend.lagom.javadsl.persistence.AggregateEventTag;
@@ -78,6 +80,11 @@ public class ProvisioningServiceImpl implements ProvisioningService {
         });
 
         return stage;
+    }
+
+    @Override
+    public ServiceCall<NotUsed, String> health() {
+        return req -> CompletableFuture.completedFuture("ok");
     }
 
     @Override

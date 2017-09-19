@@ -28,7 +28,7 @@ public final class ReleaseState extends Identity implements Jsonable {
     public static final String FIELD_STATUS = "status";
     public static final String FIELD_FAILURE = "failure";
     public static final String FIELD_INSTANCE = "instance";
-    public static final String FIELD_SERVICES = "services";
+    public static final String FIELD_ENDPOINTS = "endpoints";
 
     private Release release;
 
@@ -38,7 +38,7 @@ public final class ReleaseState extends Identity implements Jsonable {
 
     private Failure failure;
 
-    private Map<String, String> services;
+    private Map<String, String> endpoints;
 
     public ReleaseState(@JsonProperty(FIELD_ID) UUID id,
         @JsonProperty(FIELD_TIMESTAMP) Long timestamp,
@@ -46,13 +46,13 @@ public final class ReleaseState extends Identity implements Jsonable {
         @JsonProperty(FIELD_STATUS) ReleaseStatus status,
         @JsonProperty(FIELD_INSTANCE) String instance,
         @JsonProperty(FIELD_FAILURE) Failure failure,
-        @JsonProperty(FIELD_SERVICES) Map<String, String> services) {
+        @JsonProperty(FIELD_ENDPOINTS) Map<String, String> endpoints) {
         super(id, timestamp);
         this.release = release;
         this.status = status;
         this.instance = instance;
         this.failure = failure;
-        this.services = services;
+        this.endpoints = endpoints;
     }
 
     @JsonProperty(FIELD_RELEASE)
@@ -75,9 +75,9 @@ public final class ReleaseState extends Identity implements Jsonable {
         return failure;
     }
 
-    @JsonProperty(FIELD_SERVICES)
-    public Map<String, String> getServices() {
-        return Collections.unmodifiableMap(services);
+    @JsonProperty(FIELD_ENDPOINTS)
+    public Map<String, String> getEndpoints() {
+        return Collections.unmodifiableMap(endpoints);
     }
 
     public static ReleaseState none() {
@@ -109,7 +109,7 @@ public final class ReleaseState extends Identity implements Jsonable {
     public ReleaseState deployed(ReleaseEvent.DeployedRelease event) {
         return new ReleaseState(event.getId(), event.getTimestamp(),
             release, ReleaseStatus.DEPLOYED, instance, null,
-            event.getServices());
+            event.getEndpoints());
     }
 
     public ReleaseState deleted(ReleaseEvent.DeletedRelease event) {
@@ -126,7 +126,7 @@ public final class ReleaseState extends Identity implements Jsonable {
     public ReleaseState error(ReleaseEvent.ErrorRelease event) {
         return new ReleaseState(event.getId(), event.getTimestamp(),
             release, ReleaseStatus.ERROR, instance, event.getFailure(),
-            services);
+            endpoints);
     }
 
     public ProvisioningRelease getAsAPI() {
@@ -156,11 +156,11 @@ public final class ReleaseState extends Identity implements Jsonable {
                 new ProvisioningRelease.Template(release.getRepository(),
                     release.getTemplate(), release.getVersion()),
                 release.getLabels(), release.getParameters(),
-                pStatus, failure, instance, services);
+                pStatus, failure, instance, endpoints);
         } else {
             return new ProvisioningRelease(getId(),
                 getTimestamp(), null, null, null, null, null, pStatus, failure,
-                instance, services);
+                instance, endpoints);
         }
     }
 }

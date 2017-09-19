@@ -43,7 +43,7 @@ public class UpdateReleaseRequest {
         @JsonProperty(FIELD_REPOSITORY) String repository,
         @JsonProperty(FIELD_CHART) String chart,
         @JsonProperty(FIELD_VERSION) String version,
-        @JsonProperty(FIELD_VERSION) Map<String, Object> values) {
+        @JsonProperty(FIELD_VALUES) Map<String, Object> values) {
         this.name = name;
         this.repository = repository;
         this.chart = chart;

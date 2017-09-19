@@ -28,6 +28,7 @@ public class CoreSubscription extends Identity {
     public static final String FIELD_TEMPLATE = "template";
     public static final String FIELD_LABELS = "labels";
     public static final String FIELD_PARAMETERS = "parameters";
+    public static final String FIELD_ENDPOINTS = "endpoints";
 
     public static final String OPTION_UPDATE = "upd";
     public static final String OPTION_DELETE = "del";
@@ -78,6 +79,7 @@ public class CoreSubscription extends Identity {
     private Template template;
     private Map<String, String> labels;
     private Map<String, Object> parameters;
+    private Map<String, String> endpoints;
 
     @JsonCreator
     public CoreSubscription(@JsonProperty(FIELD_ID) UUID id,
@@ -87,7 +89,8 @@ public class CoreSubscription extends Identity {
         @JsonProperty(FIELD_NAMESPACE) String namespace,
         @JsonProperty(FIELD_TEMPLATE) Template template,
         @JsonProperty(FIELD_LABELS) Map<String, String> labels,
-        @JsonProperty(FIELD_PARAMETERS) Map<String, Object> parameters) {
+        @JsonProperty(FIELD_PARAMETERS) Map<String, Object> parameters,
+        @JsonProperty(FIELD_ENDPOINTS) Map<String, String> endpoints) {
         super(id, timestamp);
         this.operation = operation;
         this.target = target;
@@ -95,6 +98,7 @@ public class CoreSubscription extends Identity {
         this.template = template;
         this.labels = labels;
         this.parameters = parameters;
+        this.endpoints = endpoints;
     }
 
     public Operation getOperation() {
@@ -119,5 +123,9 @@ public class CoreSubscription extends Identity {
 
     public Map<String, Object> getParameters() {
         return Collections.unmodifiableMap(parameters);
+    }
+
+    public Map<String, String> getEndpoints() {
+        return Collections.unmodifiableMap(endpoints);
     }
 }

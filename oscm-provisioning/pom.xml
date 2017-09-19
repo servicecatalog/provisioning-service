@@ -66,6 +66,17 @@
         </plugins>
     </build>
 
+    <repositories>
+        <repository>
+            <snapshots>
+                <enabled>false</enabled>
+            </snapshots>
+            <id>bintray-hajile-maven</id>
+            <name>bintray</name>
+            <url>https://dl.bintray.com/hajile/maven</url>
+        </repository>
+    </repositories>
+
     <dependencyManagement>
         <dependencies>
             <dependency>
@@ -74,11 +85,6 @@
                 <version>${lagom.version}</version>
                 <scope>import</scope>
                 <type>pom</type>
-            </dependency>
-            <dependency>
-                <groupId>com.typesafe.conductr</groupId>
-                <artifactId>${conductr.lib.name}</artifactId>
-                <version>1.4.7</version>
             </dependency>
             <dependency>
                 <groupId>org.oscm.lagom</groupId>
@@ -92,8 +98,7 @@
             </dependency>
             <dependency>
                 <groupId>com.lightbend.lagom</groupId>
-                <artifactId>lagom-javadsl-persistence-cassandra_2.11
-                </artifactId>
+                <artifactId>lagom-javadsl-persistence-cassandra_2.11</artifactId>
                 <version>${lagom.version}</version>
             </dependency>
             <dependency>
@@ -106,6 +111,16 @@
                 <artifactId>lagom-javadsl-client_2.11</artifactId>
                 <version>${lagom.version}</version>
             </dependency>
+            <dependency>
+                <groupId>com.lightbend.lagom</groupId>
+                <artifactId>lagom-javadsl-testkit_2.11</artifactId>
+                <version>${lagom.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.lightbend</groupId>
+                <artifactId>lagom13-java-service-locator-dns_2.11</artifactId>
+                <version>2.1.0</version>
+            </dependency>
         </dependencies>
     </dependencyManagement>
 
@@ -114,6 +129,5 @@
 
         <lagom.version>1.3.6</lagom.version>
         <lagom.base.version>0.0.1-SNAPSHOT</lagom.base.version>
-        <conductr.lib.name>lagom10-conductr-bundle-lib_2.11</conductr.lib.name>
     </properties>
 </project>

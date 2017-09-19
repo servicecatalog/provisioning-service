@@ -31,7 +31,7 @@ public class ProvisioningRelease extends Identity {
     public static final String FIELD_STATUS = "status";
     public static final String FIELD_FAILURE = "failure";
     public static final String FIELD_INSTANCE = "instance";
-    public static final String FIELD_SERVICES = "services";
+    public static final String FIELD_ENDPOINTS = "endpoints";
 
     public static final String OPTION_PENDING = "pending";
     public static final String OPTION_DEPLOYED = "deployed";
@@ -95,7 +95,7 @@ public class ProvisioningRelease extends Identity {
         @JsonProperty(FIELD_STATUS) Status status,
         @JsonProperty(FIELD_FAILURE) Failure failure,
         @JsonProperty(FIELD_INSTANCE) String instance,
-        @JsonProperty(FIELD_SERVICES) Map<String, String> services) {
+        @JsonProperty(FIELD_ENDPOINTS) Map<String, String> endpoints) {
         super(id, timestamp);
         this.target = target;
         this.namespace = namespace;
@@ -105,7 +105,7 @@ public class ProvisioningRelease extends Identity {
         this.status = status;
         this.failure = failure;
         this.instance = instance;
-        this.services = services;
+        this.endpoints = endpoints;
     }
 
     private String target;
@@ -124,7 +124,7 @@ public class ProvisioningRelease extends Identity {
 
     private String instance;
 
-    private Map<String, String> services;
+    private Map<String, String> endpoints;
 
     @JsonProperty(FIELD_TARGET)
     public String getTarget() {
@@ -166,8 +166,8 @@ public class ProvisioningRelease extends Identity {
         return instance;
     }
 
-    @JsonProperty(FIELD_SERVICES)
-    public Map<String, String> getServices() {
-        return Collections.unmodifiableMap(services);
+    @JsonProperty(FIELD_ENDPOINTS)
+    public Map<String, String> getEndpoints() {
+        return Collections.unmodifiableMap(endpoints);
     }
 }

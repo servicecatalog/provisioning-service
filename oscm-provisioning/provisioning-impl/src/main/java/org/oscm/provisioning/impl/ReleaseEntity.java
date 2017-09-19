@@ -11,15 +11,11 @@
 package org.oscm.provisioning.impl;
 
 import akka.Done;
-import akka.actor.ActorSystem;
-import akka.actor.Cancellable;
 import com.lightbend.lagom.javadsl.persistence.PersistentEntity;
-import com.lightbend.lagom.javadsl.persistence.PersistentEntityRegistry;
 import org.oscm.provisioning.impl.data.ReleaseCommand;
 import org.oscm.provisioning.impl.data.ReleaseEvent;
 import org.oscm.provisioning.impl.data.ReleaseState;
 
-import javax.inject.Inject;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -27,20 +23,6 @@ public class ReleaseEntity extends
     PersistentEntity<ReleaseCommand, ReleaseEvent, ReleaseState> {
 
     private static final String INSTANCE_PREFIX = "oscm-";
-
-    private final ActorSystem system;
-    private final PersistentEntityRegistry registry;
-    private final RudderClientManager clientManager;
-
-    private volatile Cancellable watchdog;
-
-    @Inject
-    public ReleaseEntity(ActorSystem system, PersistentEntityRegistry registry,
-        RudderClientManager clientManager) {
-        this.system = system;
-        this.registry = registry;
-        this.clientManager = clientManager;
-    }
 
     @Override
     public Behavior initialBehavior(Optional<ReleaseState> snapshot) {
@@ -79,7 +61,19 @@ public class ReleaseEntity extends
             this::installingRelease);
 
         builder.setReadOnlyCommandHandler(ReleaseCommand.DeleteRelease.class,
-            this::alreadyDone);
+            this::ignore);
+
+        builder.setReadOnlyCommandHandler(ReleaseCommand.InternalInitiateRelease.class,
+            this::ignore);
+
+        builder.setReadOnlyCommandHandler(ReleaseCommand.InternalConfirmRelease.class,
+            this::ignore);
+
+        builder.setReadOnlyCommandHandler(ReleaseCommand.InternalDeleteRelease.class,
+            this::ignore);
+
+        builder.setReadOnlyCommandHandler(ReleaseCommand.InternalFailRelease.class,
+            this::ignore);
 
         builder.setEventHandlerChangingBehavior(
             ReleaseEvent.InstallingRelease.class,
@@ -99,8 +93,14 @@ public class ReleaseEntity extends
         builder.setCommandHandler(ReleaseCommand.DeleteRelease.class,
             this::deletedRelease);
 
-        builder.setCommandHandler(ReleaseCommand.InternalCommitRelease.class,
+        builder.setCommandHandler(ReleaseCommand.InternalInitiateRelease.class,
             this::pendingRelease);
+
+        builder.setReadOnlyCommandHandler(ReleaseCommand.InternalConfirmRelease.class,
+            this::ignore);
+
+        builder.setReadOnlyCommandHandler(ReleaseCommand.InternalDeleteRelease.class,
+            this::ignore);
 
         builder.setCommandHandler(ReleaseCommand.InternalFailRelease.class,
             this::failedRelease);
@@ -135,8 +135,14 @@ public class ReleaseEntity extends
         builder.setCommandHandler(ReleaseCommand.DeleteRelease.class,
             this::deletingRelease);
 
-        builder.setCommandHandler(ReleaseCommand.InternalCommitRelease.class,
+        builder.setCommandHandler(ReleaseCommand.InternalInitiateRelease.class,
             this::pendingRelease);
+
+        builder.setReadOnlyCommandHandler(ReleaseCommand.InternalConfirmRelease.class,
+            this::ignore);
+
+        builder.setReadOnlyCommandHandler(ReleaseCommand.InternalDeleteRelease.class,
+            this::ignore);
 
         builder.setCommandHandler(ReleaseCommand.InternalFailRelease.class,
             this::errorRelease);
@@ -167,10 +173,31 @@ public class ReleaseEntity extends
         BehaviorBuilder builder = newBehaviorBuilder(state);
 
         builder.setReadOnlyCommandHandler(ReleaseCommand.UpdateRelease.class,
-            this::alreadyDone);
+            this::ignore);
 
         builder.setReadOnlyCommandHandler(ReleaseCommand.DeleteRelease.class,
-            this::alreadyDone);
+            this::ignore);
+
+        builder.setCommandHandler(ReleaseCommand.InternalInitiateRelease.class,
+            this::pendingRelease);
+
+        builder.setReadOnlyCommandHandler(ReleaseCommand.InternalConfirmRelease.class,
+            this::ignore);
+
+        builder.setReadOnlyCommandHandler(ReleaseCommand.InternalDeleteRelease.class,
+            this::ignore);
+
+        builder.setCommandHandler(ReleaseCommand.InternalFailRelease.class,
+            this::errorRelease);
+
+        builder.setEventHandlerChangingBehavior(
+            ReleaseEvent.PendingRelease.class,
+            evt -> pending(state.pending(evt)));
+
+        builder.setEventHandlerChangingBehavior(
+            ReleaseEvent.ErrorRelease.class,
+            event -> error(state().error(event))
+        );
 
         addGetReleaseHandler(builder);
 
@@ -186,7 +213,10 @@ public class ReleaseEntity extends
         builder.setCommandHandler(ReleaseCommand.DeleteRelease.class,
             this::deletingRelease);
 
-        builder.setCommandHandler(ReleaseCommand.InternalCommitRelease.class,
+        builder.setReadOnlyCommandHandler(ReleaseCommand.InternalInitiateRelease.class,
+            this::ignore);
+
+        builder.setCommandHandler(ReleaseCommand.InternalConfirmRelease.class,
             this::deployedRelease);
 
         builder.setCommandHandler(ReleaseCommand.InternalDeleteRelease.class,
@@ -232,6 +262,12 @@ public class ReleaseEntity extends
         builder.setCommandHandler(ReleaseCommand.DeleteRelease.class,
             this::deletingRelease);
 
+        builder.setReadOnlyCommandHandler(ReleaseCommand.InternalInitiateRelease.class,
+            this::ignore);
+
+        builder.setReadOnlyCommandHandler(ReleaseCommand.InternalConfirmRelease.class,
+            this::ignore);
+
         builder.setCommandHandler(ReleaseCommand.InternalDeleteRelease.class,
             this::deletedRelease);
 
@@ -266,10 +302,22 @@ public class ReleaseEntity extends
         BehaviorBuilder builder = newBehaviorBuilder(state);
 
         builder.setReadOnlyCommandHandler(ReleaseCommand.UpdateRelease.class,
-            this::alreadyDone);
+            this::ignore);
 
         builder.setReadOnlyCommandHandler(ReleaseCommand.DeleteRelease.class,
-            this::alreadyDone);
+            this::ignore);
+
+        builder.setReadOnlyCommandHandler(ReleaseCommand.InternalInitiateRelease.class,
+            this::ignore);
+
+        builder.setReadOnlyCommandHandler(ReleaseCommand.InternalConfirmRelease.class,
+            this::ignore);
+
+        builder.setReadOnlyCommandHandler(ReleaseCommand.InternalDeleteRelease.class,
+            this::ignore);
+
+        builder.setReadOnlyCommandHandler(ReleaseCommand.InternalFailRelease.class,
+            this::ignore);
 
         addGetReleaseHandler(builder);
 
@@ -283,7 +331,19 @@ public class ReleaseEntity extends
             this::installingRelease);
 
         builder.setReadOnlyCommandHandler(ReleaseCommand.DeleteRelease.class,
-            this::alreadyDone);
+            this::ignore);
+
+        builder.setReadOnlyCommandHandler(ReleaseCommand.InternalInitiateRelease.class,
+            this::ignore);
+
+        builder.setReadOnlyCommandHandler(ReleaseCommand.InternalConfirmRelease.class,
+            this::ignore);
+
+        builder.setReadOnlyCommandHandler(ReleaseCommand.InternalDeleteRelease.class,
+            this::ignore);
+
+        builder.setReadOnlyCommandHandler(ReleaseCommand.InternalFailRelease.class,
+            this::ignore);
 
         builder.setEventHandlerChangingBehavior(
             ReleaseEvent.InstallingRelease.class,
@@ -302,6 +362,18 @@ public class ReleaseEntity extends
 
         builder.setCommandHandler(ReleaseCommand.DeleteRelease.class,
             this::deletingRelease);
+
+        builder.setReadOnlyCommandHandler(ReleaseCommand.InternalInitiateRelease.class,
+            this::ignore);
+
+        builder.setReadOnlyCommandHandler(ReleaseCommand.InternalConfirmRelease.class,
+            this::ignore);
+
+        builder.setReadOnlyCommandHandler(ReleaseCommand.InternalDeleteRelease.class,
+            this::ignore);
+
+        builder.setReadOnlyCommandHandler(ReleaseCommand.InternalFailRelease.class,
+            this::ignore);
 
         builder.setEventHandlerChangingBehavior(
             ReleaseEvent.UpdatingRelease.class,
@@ -348,8 +420,7 @@ public class ReleaseEntity extends
     }
 
     private Persist<ReleaseEvent> pendingRelease(
-        ReleaseCommand.InternalCommitRelease cmd,
-        CommandContext<Done> ctx) {
+        ReleaseCommand.InternalInitiateRelease cmd, CommandContext<Done> ctx) {
         return ctx.thenPersist(
             new ReleaseEvent.PendingRelease(UUID.fromString(entityId()),
                 System.currentTimeMillis()),
@@ -357,8 +428,7 @@ public class ReleaseEntity extends
     }
 
     private Persist<ReleaseEvent> deployedRelease(
-        ReleaseCommand.InternalCommitRelease cmd,
-        CommandContext<Done> ctx) {
+        ReleaseCommand.InternalConfirmRelease cmd, CommandContext<Done> ctx) {
         return ctx.thenPersist(
             new ReleaseEvent.DeployedRelease(UUID.fromString(entityId()),
                 System.currentTimeMillis(), cmd.getServices()),
@@ -366,8 +436,7 @@ public class ReleaseEntity extends
     }
 
     private Persist<ReleaseEvent> deletedRelease(
-        ReleaseCommand cmd,
-        CommandContext<Done> ctx) {
+        ReleaseCommand cmd, CommandContext<Done> ctx) {
         return ctx.thenPersist(
             new ReleaseEvent.DeletedRelease(UUID.fromString(entityId()),
                 System.currentTimeMillis()),
@@ -399,7 +468,7 @@ public class ReleaseEntity extends
             (cmd, ctx) -> ctx.reply(state()));
     }
 
-    private void alreadyDone(Object cmd, ReadOnlyCommandContext<Done> ctx) {
+    private void ignore(Object cmd, ReadOnlyCommandContext<Done> ctx) {
         ctx.reply(Done.getInstance());
     }
 }
