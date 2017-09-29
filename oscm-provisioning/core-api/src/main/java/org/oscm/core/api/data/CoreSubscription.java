@@ -118,14 +118,26 @@ public class CoreSubscription extends Identity {
     }
 
     public Map<String, String> getLabels() {
-        return Collections.unmodifiableMap(labels);
+        if (labels != null) {
+            return Collections.unmodifiableMap(labels);
+        } else {
+            return Collections.emptyMap();
+        }
     }
 
     public Map<String, Object> getParameters() {
-        return Collections.unmodifiableMap(parameters);
+        if (parameters != null) {
+            return Collections.unmodifiableMap(parameters);
+        } else {
+            return Collections.emptyMap();
+        }
     }
 
     public Map<String, String> getEndpoints() {
-        return Collections.unmodifiableMap(endpoints);
+        if (endpoints != null) {
+            return Collections.unmodifiableMap(endpoints);
+        } else {
+            return Collections.emptyMap();
+        }
     }
 }

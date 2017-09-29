@@ -1,10 +1,10 @@
 /*
  * ****************************************************************************
- *
- *    Copyright FUJITSU LIMITED 2017
- *
- *    Creation Date: 2017-08-01
- *
+ *                                                                                
+ *    Copyright FUJITSU LIMITED 2017                                           
+ *                                                                                                                                
+ *    Creation Date: 2017-09-21              
+ *                                                                                
  * ****************************************************************************
  */
 
@@ -29,12 +29,24 @@ import org.oscm.provisioning.api.data.ProvisioningRelease;
 import org.oscm.provisioning.impl.data.Release;
 import org.oscm.provisioning.impl.data.ReleaseCommand;
 import org.oscm.provisioning.impl.data.ReleaseEvent;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import javax.inject.Inject;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 
+/**
+ * Implementation of the provisioning service. The service subscribes to the subscription topic of
+ * the core service and executes an update or delete command for each received subscription on the
+ * corresponding release entity. With each resulting event, the current state of the release entity
+ * is written to the release topic.
+ *
+ * @author miethaner
+ */
 public class ProvisioningServiceImpl implements ProvisioningService {
+
+    private static final Logger LOGGER = LoggerFactory.getLogger(ProvisioningServiceImpl.class);
 
     private final PersistentEntityRegistry registry;
 
@@ -47,39 +59,53 @@ public class ProvisioningServiceImpl implements ProvisioningService {
         registry.register(ReleaseEntity.class);
 
         coreService.subscriptionTopic().subscribe().atLeastOnce(
-            Flow.<CoreSubscription>create()
-                .mapAsync(1, this::consumeSubscription));
+            Flow.<CoreSubscription>create().mapAsync(1, this::consumeSubscription));
     }
 
     private CompletionStage<Done> consumeSubscription(
         CoreSubscription subscription) {
 
-        if (subscription == null || subscription.getId() == null) {
+        try {
+
+            if (subscription == null || subscription.getId() == null) {
+                LOGGER.warn("Received invalid subscription");
+                return CompletableFuture.completedFuture(Done.getInstance());
+            }
+
+            LOGGER.info("Received subscription with id {} and timestamp {}", subscription.getId(),
+                subscription.getTimestamp());
+
+            PersistentEntityRef<ReleaseCommand> ref = registry
+                .refFor(ReleaseEntity.class, subscription.getIdString());
+
+            CompletionStage<Done> stage = CompletableFuture
+                .completedFuture(Done.getInstance());
+
+            if (subscription.getOperation()
+                == CoreSubscription.Operation.UPDATE) {
+                LOGGER.info("Update release for subscription with id {}", subscription.getId());
+                stage = ref.ask(new ReleaseCommand.UpdateRelease(
+                    new Release(subscription)));
+
+            } else if (subscription.getOperation()
+                == CoreSubscription.Operation.DELETE) {
+                LOGGER.info("Delete release for subscription with id {}", subscription.getId());
+                stage = ref.ask(ReleaseCommand.DeleteRelease.INSTANCE);
+            }
+
+            stage.exceptionally(throwable -> {
+                LOGGER.error(
+                    String.format("Unable to consume subscription with id {} and timestamp {}",
+                        subscription.getId(), subscription.getTimestamp()), throwable);
+                return Done.getInstance();
+            });
+
+            return stage;
+        } catch (Exception e) {
+            LOGGER.error(String.format("Unable to consume subscription with id {} and timestamp {}",
+                subscription.getId(), subscription.getTimestamp()), e);
             return CompletableFuture.completedFuture(Done.getInstance());
         }
-
-        PersistentEntityRef<ReleaseCommand> ref = registry
-            .refFor(ReleaseEntity.class, subscription.getIdString());
-
-        CompletionStage<Done> stage = CompletableFuture
-            .completedFuture(Done.getInstance());
-
-        if (subscription.getOperation()
-            == CoreSubscription.Operation.UPDATE) {
-            stage = ref.ask(new ReleaseCommand.UpdateRelease(
-                new Release(subscription)));
-
-        } else if (subscription.getOperation()
-            == CoreSubscription.Operation.DELETE) {
-            stage = ref.ask(ReleaseCommand.DeleteRelease.INSTANCE);
-        }
-
-        stage.exceptionally(throwable -> {
-            //TODO Log error
-            return Done.getInstance();
-        });
-
-        return stage;
     }
 
     @Override
@@ -100,10 +126,15 @@ public class ProvisioningServiceImpl implements ProvisioningService {
             .mapAsync(1, pair -> {
 
                 String id = pair.first().getIdString();
+                LOGGER.info("Pre production with id {}", id);
 
                 return registry.refFor(ReleaseEntity.class, id)
                     .ask(ReleaseCommand.GetRelease.INSTANCE)
-                    .thenApply(release -> Pair.create(release, pair.second()));
+                    .thenApply(release -> {
+                        LOGGER.info("Produced release with id {} and timestamp {}",
+                            release.getId(), release.getTimestamp());
+                        return Pair.create(release, pair.second());
+                    });
             });
     }
 }

@@ -1,10 +1,10 @@
 /*
  * ****************************************************************************
- *
- *    Copyright FUJITSU LIMITED 2017
- *
- *    Creation Date: 2017-08-07
- *
+ *                                                                                
+ *    Copyright FUJITSU LIMITED 2017                                           
+ *                                                                                                                                
+ *    Creation Date: 2017-09-21              
+ *                                                                                
  * ****************************************************************************
  */
 
@@ -27,7 +27,8 @@ import org.oscm.provisioning.impl.data.ReleaseCommand.*;
 import org.oscm.rudder.api.RudderService;
 import org.oscm.rudder.api.data.ReleaseStatusResponse;
 import org.pcollections.PSequence;
-import scala.concurrent.duration.Duration;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import scala.concurrent.duration.FiniteDuration;
 
 import javax.inject.Inject;
@@ -37,7 +38,6 @@ import java.net.URISyntaxException;
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
-import java.util.concurrent.TimeUnit;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
@@ -61,10 +61,14 @@ public class ReleaseScheduler {
     private static final String KEY_IP = "ip";
     private static final String KEY_PORT = "port";
 
+    private static final Logger LOGGER = LoggerFactory.getLogger(ReleaseScheduler.class);
+
     private final RudderClientManager rudderClientManager;
     private final CassandraSession session;
     private final PersistentEntityRegistry registry;
     private final Materializer materializer;
+
+    private final List<String> tags;
 
     @Inject
     public ReleaseScheduler(RudderClientManager rudderClientManager,
@@ -75,6 +79,13 @@ public class ReleaseScheduler {
         this.session = session;
         this.registry = registry;
         this.materializer = materializer;
+
+        tags = ReleaseEvent.TAG.allTags().stream().map(AggregateEventTag::tag).collect(
+            Collectors.toList());
+
+        FiniteDuration initialDelay = FiniteDuration
+            .fromNanos(system.settings().config()
+                .getDuration(Config.WATCHDOG_INITIAL_DELAY).toNanos());
 
         FiniteDuration executionInterval = FiniteDuration
             .fromNanos(system.settings().config()
@@ -87,17 +98,14 @@ public class ReleaseScheduler {
         readSide.register(ReleaseProcessor.class);
 
         system.scheduler()
-            .schedule(Duration.create(0, TimeUnit.SECONDS), executionInterval,
-                this::executeReleases, system.dispatcher());
+            .schedule(initialDelay, executionInterval, this::executeReleases, system.dispatcher());
         system.scheduler()
-            .schedule(Duration.create(0, TimeUnit.SECONDS), monitorInterval,
-                this::monitorReleases, system.dispatcher());
+            .schedule(initialDelay, monitorInterval, this::monitorReleases, system.dispatcher());
     }
 
     private void executeReleases() {
-
-        serveRelease(ReleaseStatus.INSTALLING, ReleaseStatus.UPDATING,
-            ReleaseStatus.DELETING, ReleaseStatus.PENDING);
+        serveRelease(ReleaseStatus.INSTALLING, ReleaseStatus.UPDATING, ReleaseStatus.DELETING,
+            ReleaseStatus.PENDING);
     }
 
     private void monitorReleases() {
@@ -106,12 +114,14 @@ public class ReleaseScheduler {
 
     private void serveRelease(ReleaseStatus... statuses) {
         try {
-            session.select("SELECT id, status FROM releaseSchedule WHERE tag IN ? AND status IN ?",
-                ReleaseEvent.TAG.allTags(), statuses)
+            session.select("SELECT id, status FROM releaseSchedule WHERE tag IN ?", tags)
                 .runForeach(row -> {
                     UUID id = row.getUUID("id");
-                    ReleaseStatus status = row
-                        .get("status", ReleaseStatus.class);
+                    ReleaseStatus status = ReleaseStatus.valueOf(row.getString("status"));
+
+                    if (!Arrays.asList(statuses).contains(status)) {
+                        return;
+                    }
 
                     PersistentEntityRef<ReleaseCommand> ref = registry
                         .refFor(ReleaseEntity.class, id.toString());
@@ -147,7 +157,7 @@ public class ReleaseScheduler {
                             }
                         });
                 }, materializer).exceptionally(throwable -> {
-                //TODO Log error
+                LOGGER.error("Unable to serve releases", throwable);
                 return Done.getInstance();
             });
         } catch (IllegalStateException ise) {
@@ -380,8 +390,7 @@ public class ReleaseScheduler {
         private PreparedStatement deleteStatement;
 
         @Inject
-        public ReleaseProcessor(CassandraReadSide readSide,
-            CassandraSession session) {
+        public ReleaseProcessor(CassandraReadSide readSide, CassandraSession session) {
             this.readSide = readSide;
             this.session = session;
         }
@@ -415,20 +424,16 @@ public class ReleaseScheduler {
         private CompletionStage<Done> createTable() {
             return session.executeCreateTable(
                 "CREATE TABLE IF NOT EXISTS releaseSchedule ( " +
-                    "id uuid, " +
                     "tag varchar, " +
+                    "id uuid, " +
                     "status varchar, " +
-                    "PRIMARY KEY (id)" +
-                    ")")
-                .thenCompose(d -> session.executeCreateTable(
-                    "CREATE INDEX IF NOT EXISTS releaseScheduleIndex " +
-                        "ON releaseSchedule (tag)")
+                    "PRIMARY KEY (tag, id)" +
+                    ")"
             );
         }
 
         private CompletionStage<Done> prepareInsertStatement() {
-            return session.prepare(
-                "INSERT INTO releaseSchedule(id, tag, status) VALUES (?, ?, ?)")
+            return session.prepare("INSERT INTO releaseSchedule(id, tag, status) VALUES (?, ?, ?)")
                 .thenApply(s -> {
                     insertStatement = s;
                     return Done.getInstance();
@@ -436,8 +441,7 @@ public class ReleaseScheduler {
         }
 
         private CompletionStage<Done> prepareUpdateStatement() {
-            return session.prepare(
-                "UPDATE releaseSchedule SET tag = ?, status = ? WHERE id = ?")
+            return session.prepare("UPDATE releaseSchedule SET status = ? WHERE id = ? AND tag = ?")
                 .thenApply(s -> {
                     updateStatement = s;
                     return Done.getInstance();
@@ -445,32 +449,33 @@ public class ReleaseScheduler {
         }
 
         private CompletionStage<Done> prepareDeleteStatement() {
-            return session.prepare("DELETE FROM releaseSchedule WHERE id = ?")
+            return session.prepare("DELETE FROM releaseSchedule WHERE id = ? AND tag = ?")
                 .thenApply(s -> {
                     deleteStatement = s;
                     return Done.getInstance();
                 });
         }
 
-        private CompletionStage<List<BoundStatement>> insert(
-            ReleaseEvent event, ReleaseStatus status) {
+        private CompletionStage<List<BoundStatement>> insert(ReleaseEvent event,
+            ReleaseStatus status) {
 
             return completedStatement(insertStatement.bind(event.getId(),
-                ReleaseEvent.TAG.forEntityId(event.getIdString()).tag(), status
+                ReleaseEvent.TAG.forEntityId(event.getIdString()).tag(), status.name()
             ));
         }
 
-        private CompletionStage<List<BoundStatement>> update(
-            ReleaseEvent event, ReleaseStatus status) {
+        private CompletionStage<List<BoundStatement>> update(ReleaseEvent event,
+            ReleaseStatus status) {
 
-            return completedStatement(updateStatement.bind(
-                ReleaseEvent.TAG.forEntityId(event.getIdString()).tag(), status, event.getId()
+            return completedStatement(updateStatement.bind(status.name(), event.getId(),
+                ReleaseEvent.TAG.forEntityId(event.getIdString()).tag()
             ));
         }
 
-        private CompletionStage<List<BoundStatement>> delete(
-            ReleaseEvent event) {
-            return completedStatement(deleteStatement.bind(event.getId()));
+        private CompletionStage<List<BoundStatement>> delete(ReleaseEvent event) {
+            return completedStatement(deleteStatement.bind(
+                event.getId(), ReleaseEvent.TAG.forEntityId(event.getIdString()).tag()
+            ));
         }
 
         @Override

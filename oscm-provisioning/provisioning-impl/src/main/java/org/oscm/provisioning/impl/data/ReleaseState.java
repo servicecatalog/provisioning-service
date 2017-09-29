@@ -1,10 +1,10 @@
 /*
  * ****************************************************************************
- *
- *    Copyright FUJITSU LIMITED 2017
- *
- *    Creation Date: 2017-08-03
- *
+ *                                                                                
+ *    Copyright FUJITSU LIMITED 2017                                           
+ *                                                                                                                                
+ *    Creation Date: 2017-09-21              
+ *                                                                                
  * ****************************************************************************
  */
 
@@ -16,12 +16,10 @@ import org.oscm.lagom.data.Failure;
 import org.oscm.lagom.data.Identity;
 import org.oscm.provisioning.api.data.ProvisioningRelease;
 
-import javax.annotation.concurrent.Immutable;
 import java.util.Collections;
 import java.util.Map;
 import java.util.UUID;
 
-@Immutable
 public final class ReleaseState extends Identity implements Jsonable {
 
     public static final String FIELD_RELEASE = "release";
@@ -77,7 +75,11 @@ public final class ReleaseState extends Identity implements Jsonable {
 
     @JsonProperty(FIELD_ENDPOINTS)
     public Map<String, String> getEndpoints() {
-        return Collections.unmodifiableMap(endpoints);
+        if (endpoints != null) {
+            return Collections.unmodifiableMap(endpoints);
+        } else {
+            return Collections.emptyMap();
+        }
     }
 
     public static ReleaseState none() {

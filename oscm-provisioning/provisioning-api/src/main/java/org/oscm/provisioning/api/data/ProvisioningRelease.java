@@ -3,7 +3,7 @@
  *
  *    Copyright FUJITSU LIMITED 2017
  *
- *    Creation Date: 2017-08-03
+ *    Creation Date: 2017-09-29
  *
  * ****************************************************************************
  */
@@ -19,6 +19,12 @@ import javax.annotation.concurrent.Immutable;
 import java.util.Collections;
 import java.util.Map;
 import java.util.UUID;
+
+/**
+ * API release entity class exposed by the provisioning.
+ *
+ * @author miethaner
+ */
 
 @Immutable
 public class ProvisioningRelease extends Identity {
@@ -143,12 +149,20 @@ public class ProvisioningRelease extends Identity {
 
     @JsonProperty(FIELD_LABELS)
     public Map<String, String> getLabels() {
-        return Collections.unmodifiableMap(labels);
+        if (labels != null) {
+            return Collections.unmodifiableMap(labels);
+        } else {
+            return Collections.emptyMap();
+        }
     }
 
     @JsonProperty(FIELD_PARAMETERS)
     public Map<String, Object> getParameters() {
-        return Collections.unmodifiableMap(parameters);
+        if (parameters != null) {
+            return Collections.unmodifiableMap(parameters);
+        } else {
+            return Collections.emptyMap();
+        }
     }
 
     @JsonProperty(FIELD_STATUS)
@@ -168,6 +182,10 @@ public class ProvisioningRelease extends Identity {
 
     @JsonProperty(FIELD_ENDPOINTS)
     public Map<String, String> getEndpoints() {
-        return Collections.unmodifiableMap(endpoints);
+        if (endpoints != null) {
+            return Collections.unmodifiableMap(endpoints);
+        } else {
+            return Collections.emptyMap();
+        }
     }
 }

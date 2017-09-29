@@ -1,10 +1,10 @@
 /*
  * ****************************************************************************
- *
- *    Copyright FUJITSU LIMITED 2017
- *
- *    Creation Date: 2017-08-03
- *
+ *                                                                                
+ *    Copyright FUJITSU LIMITED 2017                                           
+ *                                                                                                                                
+ *    Creation Date: 2017-09-21              
+ *                                                                                
  * ****************************************************************************
  */
 
@@ -18,7 +18,6 @@ import com.lightbend.lagom.serialization.Jsonable;
 import org.oscm.lagom.data.Failure;
 import org.oscm.provisioning.api.data.ProvisioningRelease;
 
-import javax.annotation.concurrent.Immutable;
 import java.util.Collections;
 import java.util.Map;
 
@@ -28,7 +27,6 @@ public interface ReleaseCommand extends Jsonable {
     String FIELD_SERVICES = "services";
     String FIELD_FAILURE = "failure";
 
-    @Immutable
     public final class UpdateRelease
         implements ReleaseCommand, PersistentEntity.ReplyType<Done> {
 
@@ -56,7 +54,6 @@ public interface ReleaseCommand extends Jsonable {
         INSTANCE
     }
 
-    @Immutable
     public final class InternalConfirmRelease
         implements ReleaseCommand, PersistentEntity.ReplyType<Done> {
 
@@ -79,7 +76,6 @@ public interface ReleaseCommand extends Jsonable {
         INSTANCE
     }
 
-    @Immutable
     public final class InternalFailRelease
         implements ReleaseCommand, PersistentEntity.ReplyType<Done> {
 

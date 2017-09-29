@@ -48,7 +48,7 @@
         </dependency>
         <dependency>
             <groupId>com.lightbend</groupId>
-            <artifactId>lagom13-java-service-locator-dns_2.11</artifactId>
+            <artifactId>lagom14-java-service-locator-dns_2.11</artifactId>
         </dependency>
         <dependency>
             <groupId>com.lightbend.lagom</groupId>

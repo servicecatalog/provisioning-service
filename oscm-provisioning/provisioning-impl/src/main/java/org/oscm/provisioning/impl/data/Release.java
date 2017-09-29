@@ -1,10 +1,10 @@
 /*
  * ****************************************************************************
- *
- *    Copyright FUJITSU LIMITED 2017
- *
- *    Creation Date: 2017-08-03
- *
+ *                                                                                
+ *    Copyright FUJITSU LIMITED 2017                                           
+ *                                                                                                                                
+ *    Creation Date: 2017-09-21              
+ *                                                                                
  * ****************************************************************************
  */
 
@@ -12,16 +12,15 @@ package org.oscm.provisioning.impl.data;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.lightbend.lagom.serialization.Jsonable;
 import org.oscm.core.api.data.CoreSubscription;
 import org.oscm.rudder.api.data.InstallReleaseRequest;
 import org.oscm.rudder.api.data.UpdateReleaseRequest;
 
-import javax.annotation.concurrent.Immutable;
 import java.util.Collections;
 import java.util.Map;
 
-@Immutable
-public class Release {
+public class Release implements Jsonable {
 
     public static final String FIELD_TARGET = "target";
     public static final String FIELD_NAMESPACE = "namespace";
@@ -112,17 +111,29 @@ public class Release {
 
     @JsonProperty(FIELD_LABELS)
     public Map<String, String> getLabels() {
-        return Collections.unmodifiableMap(labels);
+        if (labels != null) {
+            return Collections.unmodifiableMap(labels);
+        } else {
+            return Collections.emptyMap();
+        }
     }
 
     @JsonProperty(FIELD_PARAMETERS)
     public Map<String, Object> getParameters() {
-        return Collections.unmodifiableMap(parameters);
+        if (parameters != null) {
+            return Collections.unmodifiableMap(parameters);
+        } else {
+            return Collections.emptyMap();
+        }
     }
 
     @JsonProperty(FIELD_ENDPOINTS)
     public Map<String, String> getEndpoints() {
-        return Collections.unmodifiableMap(endpoints);
+        if (endpoints != null) {
+            return Collections.unmodifiableMap(endpoints);
+        } else {
+            return Collections.emptyMap();
+        }
     }
 
     public InstallReleaseRequest getAsInstallRequest(String instance) {

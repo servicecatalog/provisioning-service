@@ -1,10 +1,10 @@
 /*
  * ****************************************************************************
- *
- *    Copyright FUJITSU LIMITED 2017
- *
- *    Creation Date: 2017-08-02
- *
+ *                                                                                
+ *    Copyright FUJITSU LIMITED 2017                                           
+ *                                                                                                                                
+ *    Creation Date: 2017-09-21              
+ *                                                                                
  * ****************************************************************************
  */
 
@@ -15,6 +15,8 @@ import com.lightbend.lagom.javadsl.persistence.PersistentEntity;
 import org.oscm.provisioning.impl.data.ReleaseCommand;
 import org.oscm.provisioning.impl.data.ReleaseEvent;
 import org.oscm.provisioning.impl.data.ReleaseState;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.Optional;
 import java.util.UUID;
@@ -22,11 +24,12 @@ import java.util.UUID;
 public class ReleaseEntity extends
     PersistentEntity<ReleaseCommand, ReleaseEvent, ReleaseState> {
 
+    private static final Logger LOGGER = LoggerFactory.getLogger(ReleaseEntity.class);
+
     private static final String INSTANCE_PREFIX = "oscm-";
 
     @Override
     public Behavior initialBehavior(Optional<ReleaseState> snapshot) {
-
         if (!snapshot.isPresent()) {
             return none(ReleaseState.none());
         } else {
@@ -250,6 +253,8 @@ public class ReleaseEntity extends
             evt -> error(state().error(evt))
         );
 
+        addGetReleaseHandler(builder);
+
         return builder.build();
     }
 
@@ -396,6 +401,7 @@ public class ReleaseEntity extends
 
     private Persist<ReleaseEvent> installingRelease(
         ReleaseCommand.UpdateRelease cmd, CommandContext<Done> ctx) {
+        LOGGER.info("Install release with id {}", entityId());
         return ctx.thenPersist(
             new ReleaseEvent.InstallingRelease(UUID.fromString(entityId()),
                 System.currentTimeMillis(), INSTANCE_PREFIX + entityId(),
@@ -405,6 +411,7 @@ public class ReleaseEntity extends
 
     private Persist<ReleaseEvent> updatingRelease(
         ReleaseCommand.UpdateRelease cmd, CommandContext<Done> ctx) {
+        LOGGER.info("Update release with id {}", entityId());
         return ctx.thenPersist(
             new ReleaseEvent.UpdatingRelease(UUID.fromString(entityId()),
                 System.currentTimeMillis(), cmd.getRelease()),
@@ -413,6 +420,7 @@ public class ReleaseEntity extends
 
     private Persist<ReleaseEvent> deletingRelease(
         ReleaseCommand.DeleteRelease cmd, CommandContext<Done> ctx) {
+        LOGGER.info("Delete release with id {}", entityId());
         return ctx.thenPersist(
             new ReleaseEvent.DeletingRelease(UUID.fromString(entityId()),
                 System.currentTimeMillis()),
@@ -421,6 +429,7 @@ public class ReleaseEntity extends
 
     private Persist<ReleaseEvent> pendingRelease(
         ReleaseCommand.InternalInitiateRelease cmd, CommandContext<Done> ctx) {
+        LOGGER.info("Pending release with id {}", entityId());
         return ctx.thenPersist(
             new ReleaseEvent.PendingRelease(UUID.fromString(entityId()),
                 System.currentTimeMillis()),
@@ -429,6 +438,7 @@ public class ReleaseEntity extends
 
     private Persist<ReleaseEvent> deployedRelease(
         ReleaseCommand.InternalConfirmRelease cmd, CommandContext<Done> ctx) {
+        LOGGER.info("Deployed release with id {}", entityId());
         return ctx.thenPersist(
             new ReleaseEvent.DeployedRelease(UUID.fromString(entityId()),
                 System.currentTimeMillis(), cmd.getServices()),
@@ -437,6 +447,7 @@ public class ReleaseEntity extends
 
     private Persist<ReleaseEvent> deletedRelease(
         ReleaseCommand cmd, CommandContext<Done> ctx) {
+        LOGGER.info("Deleted release with id {}", entityId());
         return ctx.thenPersist(
             new ReleaseEvent.DeletedRelease(UUID.fromString(entityId()),
                 System.currentTimeMillis()),
@@ -445,6 +456,7 @@ public class ReleaseEntity extends
 
     private Persist<ReleaseEvent> failedRelease(
         ReleaseCommand.InternalFailRelease cmd, CommandContext<Done> ctx) {
+        LOGGER.info("Failed release with id {}", entityId());
         return ctx.thenPersist(
             new ReleaseEvent.FailedRelease(UUID.fromString(entityId()),
                 System.currentTimeMillis(), cmd.getFailure()),
@@ -453,6 +465,7 @@ public class ReleaseEntity extends
 
     private Persist<ReleaseEvent> errorRelease(
         ReleaseCommand.InternalFailRelease cmd, CommandContext<Done> ctx) {
+        LOGGER.info("Error release with id {}", entityId());
         return ctx.thenPersist(
             new ReleaseEvent.ErrorRelease(UUID.fromString(entityId()),
                 System.currentTimeMillis(), cmd.getFailure()),

@@ -1,10 +1,10 @@
 /*
  * ****************************************************************************
- *
- *    Copyright FUJITSU LIMITED 2017
- *
- *    Creation Date: 2017-08-04
- *
+ *                                                                                
+ *    Copyright FUJITSU LIMITED 2017                                           
+ *                                                                                                                                
+ *    Creation Date: 2017-09-21              
+ *                                                                                
  * ****************************************************************************
  */
 
@@ -12,7 +12,6 @@ package org.oscm.provisioning.impl;
 
 import akka.actor.ActorSystem;
 import akka.stream.Materializer;
-import com.lightbend.lagom.internal.client.CircuitBreakers;
 import com.lightbend.lagom.internal.javadsl.api.broker.TopicFactoryProvider;
 import com.lightbend.lagom.internal.javadsl.client.JavadslServiceClientImplementor;
 import com.lightbend.lagom.internal.javadsl.client.JavadslWebSocketClient;
@@ -20,6 +19,7 @@ import com.lightbend.lagom.internal.javadsl.client.ServiceClientLoader;
 import com.lightbend.lagom.javadsl.api.Descriptor;
 import com.lightbend.lagom.javadsl.api.ServiceInfo;
 import com.lightbend.lagom.javadsl.api.ServiceLocator;
+import com.lightbend.lagom.javadsl.client.CircuitBreakersPanel;
 import com.lightbend.lagom.javadsl.client.CircuitBreakingServiceLocator;
 import com.lightbend.lagom.javadsl.jackson.JacksonExceptionSerializer;
 import com.lightbend.lagom.javadsl.jackson.JacksonSerializerFactory;
@@ -46,7 +46,7 @@ public class RudderClientManager {
 
         private final URI uri;
 
-        StaticServiceLocator(CircuitBreakers circuitBreakers, URI uri) {
+        StaticServiceLocator(CircuitBreakersPanel circuitBreakers, URI uri) {
             super(circuitBreakers);
             this.uri = uri;
         }
@@ -59,7 +59,7 @@ public class RudderClientManager {
     }
 
     private final Environment env;
-    private final CircuitBreakers circuitBreakers;
+    private final CircuitBreakersPanel circuitBreakers;
     private final Function<ServiceLocator, ServiceClientLoader> loaderFunction;
 
     private final RudderService defaultService;
@@ -71,7 +71,7 @@ public class RudderClientManager {
         TopicFactoryProvider topicFactoryProvider, Materializer materializer,
         JacksonSerializerFactory serializerFactory,
         JacksonExceptionSerializer exceptionSerializer,
-        CircuitBreakers circuitBreakers, ServiceLocator defaultLocator) {
+        CircuitBreakersPanel circuitBreakers, RudderService defaultService) {
 
         this.env = env;
         this.circuitBreakers = circuitBreakers;
@@ -90,8 +90,7 @@ public class RudderClientManager {
                 exceptionSerializer, env.underlying(), implementor);
         };
 
-        this.defaultService = this.loaderFunction.apply(defaultLocator)
-            .loadServiceClient(RudderService.class);
+        this.defaultService = defaultService;
     }
 
     public RudderService getServiceForURI(URI uri) {

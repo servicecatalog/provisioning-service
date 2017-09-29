@@ -3,12 +3,12 @@
  *
  *    Copyright FUJITSU LIMITED 2017
  *
- *    Creation Date: 2017-09-18
+ *    Creation Date: 2017-09-21
  *
  * ****************************************************************************
  */
 
-package org.oscm.provisioning.it;
+package org.oscm.provisioning.impl.it;
 
 import akka.NotUsed;
 import akka.stream.javadsl.Source;
@@ -34,12 +34,15 @@ import org.oscm.provisioning.api.data.ProvisioningRelease;
 import org.oscm.rudder.api.RudderService;
 import org.oscm.rudder.api.data.InstallReleaseRequest;
 import org.oscm.rudder.api.data.ReleaseStatusResponse;
+import org.oscm.rudder.api.data.ReleaseStatusResponse.Info;
+import org.oscm.rudder.api.data.ReleaseStatusResponse.Info.Status;
 import org.oscm.rudder.api.data.UpdateReleaseRequest;
 import play.inject.Bindings;
 import scala.concurrent.duration.FiniteDuration;
 
 import javax.inject.Inject;
 import java.util.UUID;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
 
 @FixMethodOrder(MethodSorters.NAME_ASCENDING)
@@ -61,7 +64,8 @@ public class ProvisioningIT {
     @Test
     public void test() {
         CoreSubscription sub = new CoreSubscription(UUID.randomUUID(), 0L, Operation.UPDATE,
-            "target", "namespace", new Template("repo", "name", "version"), null, null, null);
+            "http://www.target.de", "namespace", new Template("repo", "name", "version"), null,
+            null, null);
 
         coreProducer.send(sub);
 
@@ -73,7 +77,16 @@ public class ProvisioningIT {
         TestSubscriber.Probe<ProvisioningRelease> probe =
             releaseSource.runWith(TestSink.probe(server.system()), server.materializer());
 
-        ProvisioningRelease result = probe.expectNext(FiniteDuration.create(10L, TimeUnit.SECONDS));
+        ProvisioningRelease result = probe.request(1)
+            .expectNext(FiniteDuration.create(20L, TimeUnit.SECONDS));
+        System.out.println(result.getStatus());
+
+        result = probe.request(1)
+            .expectNext(FiniteDuration.create(40L, TimeUnit.SECONDS));
+        System.out.println(result.getStatus());
+
+        result = probe.request(1)
+            .expectNext(FiniteDuration.create(40L, TimeUnit.SECONDS));
         System.out.println(result.getStatus());
     }
 
@@ -102,22 +115,24 @@ public class ProvisioningIT {
 
         @Override
         public ServiceCall<InstallReleaseRequest, NotUsed> install() {
-            return null;
+            return req -> CompletableFuture.completedFuture(NotUsed.getInstance());
         }
 
         @Override
         public ServiceCall<UpdateReleaseRequest, NotUsed> update() {
-            return null;
+            return req -> CompletableFuture.completedFuture(NotUsed.getInstance());
         }
 
         @Override
         public ServiceCall<NotUsed, NotUsed> delete(String release) {
-            return null;
+            return req -> CompletableFuture.completedFuture(NotUsed.getInstance());
         }
 
         @Override
         public ServiceCall<NotUsed, ReleaseStatusResponse> status(String release, String version) {
-            return null;
+            return req -> CompletableFuture.completedFuture(new ReleaseStatusResponse("", "",
+                new Info(new Status(ReleaseStatusResponse.DEPLOYED, null, "", ""), null, null,
+                    null)));
         }
     }
 }

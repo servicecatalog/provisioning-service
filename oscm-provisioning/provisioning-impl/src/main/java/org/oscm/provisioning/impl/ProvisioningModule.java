@@ -1,10 +1,10 @@
 /*
  * ****************************************************************************
- *
- *    Copyright FUJITSU LIMITED 2017
- *
- *    Creation Date: 2017-08-02
- *
+ *                                                                                
+ *    Copyright FUJITSU LIMITED 2017                                           
+ *                                                                                                                                
+ *    Creation Date: 2017-09-21              
+ *                                                                                
  * ****************************************************************************
  */
 
@@ -14,6 +14,7 @@ import com.google.inject.AbstractModule;
 import com.lightbend.lagom.javadsl.server.ServiceGuiceSupport;
 import org.oscm.core.api.CoreService;
 import org.oscm.provisioning.api.ProvisioningService;
+import org.oscm.rudder.api.RudderService;
 
 public class ProvisioningModule extends AbstractModule implements
     ServiceGuiceSupport {
@@ -22,6 +23,7 @@ public class ProvisioningModule extends AbstractModule implements
     protected void configure() {
         bindService(ProvisioningService.class, ProvisioningServiceImpl.class);
         bindClient(CoreService.class);
+        bindClient(RudderService.class);
         bind(ReleaseScheduler.class).asEagerSingleton();
     }
 }

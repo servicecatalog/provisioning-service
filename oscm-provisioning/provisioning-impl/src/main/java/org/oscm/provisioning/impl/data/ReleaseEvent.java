@@ -1,10 +1,10 @@
 /*
  * ****************************************************************************
- *
- *    Copyright FUJITSU LIMITED 2017
- *
- *    Creation Date: 2017-08-03
- *
+ *                                                                                
+ *    Copyright FUJITSU LIMITED 2017                                           
+ *                                                                                                                                
+ *    Creation Date: 2017-09-21              
+ *                                                                                
  * ****************************************************************************
  */
 
@@ -20,7 +20,6 @@ import com.lightbend.lagom.serialization.Jsonable;
 import org.oscm.lagom.data.Failure;
 import org.oscm.lagom.data.Identity;
 
-import javax.annotation.concurrent.Immutable;
 import java.util.Collections;
 import java.util.Map;
 import java.util.UUID;
@@ -48,7 +47,6 @@ public abstract class ReleaseEvent extends Identity implements Jsonable,
         return TAG;
     }
 
-    @Immutable
     public static final class InstallingRelease extends ReleaseEvent {
 
         private Release release;
@@ -76,7 +74,6 @@ public abstract class ReleaseEvent extends Identity implements Jsonable,
         }
     }
 
-    @Immutable
     public static final class UpdatingRelease extends ReleaseEvent {
 
         private Release release;
@@ -95,7 +92,6 @@ public abstract class ReleaseEvent extends Identity implements Jsonable,
         }
     }
 
-    @Immutable
     public static final class DeletingRelease extends ReleaseEvent {
 
         @JsonCreator
@@ -105,7 +101,6 @@ public abstract class ReleaseEvent extends Identity implements Jsonable,
         }
     }
 
-    @Immutable
     public static final class PendingRelease extends ReleaseEvent {
 
         @JsonCreator
@@ -115,7 +110,6 @@ public abstract class ReleaseEvent extends Identity implements Jsonable,
         }
     }
 
-    @Immutable
     public static final class DeployedRelease extends ReleaseEvent {
 
         private Map<String, String> endpoints;
@@ -134,7 +128,6 @@ public abstract class ReleaseEvent extends Identity implements Jsonable,
         }
     }
 
-    @Immutable
     public static final class DeletedRelease extends ReleaseEvent {
 
         @JsonCreator
@@ -144,7 +137,6 @@ public abstract class ReleaseEvent extends Identity implements Jsonable,
         }
     }
 
-    @Immutable
     public static final class FailedRelease extends ReleaseEvent {
 
         private Failure failure;
@@ -163,7 +155,6 @@ public abstract class ReleaseEvent extends Identity implements Jsonable,
         }
     }
 
-    @Immutable
     public static final class ErrorRelease extends ReleaseEvent {
 
         private Failure failure;

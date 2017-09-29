@@ -14,6 +14,7 @@ import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
 import javax.annotation.concurrent.Immutable;
+import java.util.Collections;
 import java.util.Map;
 
 /**
@@ -83,6 +84,10 @@ public class InstallReleaseRequest {
 
     @JsonProperty(FIELD_VALUES)
     public Map<String, Object> getValues() {
-        return values;
+        if (values != null) {
+            return Collections.unmodifiableMap(values);
+        } else {
+            return Collections.emptyMap();
+        }
     }
 }
