@@ -11,7 +11,7 @@
 package org.oscm.provisioning.impl.unit;
 
 import akka.actor.ActorSystem;
-import akka.testkit.JavaTestKit;
+import akka.testkit.javadsl.TestKit;
 import com.lightbend.lagom.javadsl.testkit.PersistentEntityTestDriver;
 import com.lightbend.lagom.javadsl.testkit.PersistentEntityTestDriver.Outcome;
 import org.junit.AfterClass;
@@ -38,8 +38,8 @@ public class ReleaseEntityTest {
     }
 
     @AfterClass
-    public static void teardown() {
-        JavaTestKit.shutdownActorSystem(system);
+    public static void tearDown() {
+        TestKit.shutdownActorSystem(system);
         system = null;
     }
 

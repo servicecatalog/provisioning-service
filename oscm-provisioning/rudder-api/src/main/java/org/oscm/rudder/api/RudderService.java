@@ -23,16 +23,39 @@ import org.oscm.rudder.api.data.UpdateReleaseRequest;
 import static com.lightbend.lagom.javadsl.api.Service.named;
 import static com.lightbend.lagom.javadsl.api.Service.restCall;
 
+/**
+ * Service interface describing Rudder endpoints used by the provisioning service.
+ */
 public interface RudderService extends Service {
 
     String SERVICE_NAME = "rudder";
 
+    /**
+     * Endpoint for installing releases.
+     *
+     * @return the service call
+     */
     ServiceCall<InstallReleaseRequest, NotUsed> install();
 
+    /**
+     * Endpoint for updating releases.
+     *
+     * @return the service call
+     */
     ServiceCall<UpdateReleaseRequest, NotUsed> update();
 
+    /**
+     * Endpoint for deleting releases.
+     *
+     * @return the service call
+     */
     ServiceCall<NotUsed, NotUsed> delete(String release);
 
+    /**
+     * Endpoint for checking the release statuses.
+     *
+     * @return the service call
+     */
     ServiceCall<NotUsed, ReleaseStatusResponse> status(String release,
         String version);
 

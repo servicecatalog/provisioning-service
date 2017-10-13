@@ -10,6 +10,9 @@
 
 package org.oscm.provisioning.impl.data;
 
+/**
+ * Config class for references to application.conf.
+ */
 public class Config {
 
     public static final String RUDDER_USER = "oscm.rudder.user";

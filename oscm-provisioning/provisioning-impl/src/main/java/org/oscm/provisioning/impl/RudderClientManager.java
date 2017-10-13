@@ -38,9 +38,19 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.function.Function;
 
+/**
+ * Manager class for rudder clients.
+ * <p>
+ * This is necessary to get the advantages of service classes and manual service detection (which is
+ * required for the rudder proxies). The manager reimplements the lagom service client, except that
+ * most of the resources are already initialized and can be injected.
+ */
 @Singleton
 public class RudderClientManager {
 
+    /**
+     * Service locator class with static URL.
+     */
     private static class StaticServiceLocator
         extends CircuitBreakingServiceLocator {
 
@@ -93,6 +103,14 @@ public class RudderClientManager {
         this.defaultService = defaultService;
     }
 
+    /**
+     * Gets a rudder service instance for the given URI. In production, it will return a new or
+     * cached instance for the URI. Otherwise, the default service is returned (with the default
+     * service locator)
+     *
+     * @param uri
+     * @return
+     */
     public RudderService getServiceForURI(URI uri) {
         if (env.isProd()) {
             return services

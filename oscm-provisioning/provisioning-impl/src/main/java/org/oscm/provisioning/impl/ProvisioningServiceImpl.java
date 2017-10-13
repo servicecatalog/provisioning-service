@@ -37,12 +37,11 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 
 /**
- * Implementation of the provisioning service. The service subscribes to the subscription topic of
- * the core service and executes an update or delete command for each received subscription on the
- * corresponding release entity. With each resulting event, the current state of the release entity
- * is written to the release topic.
- *
- * @author miethaner
+ * Implementation of the provisioning service.
+ * <p>
+ * The service subscribes to the subscription topic of the core service and executes an update or
+ * delete command for each received subscription on the corresponding release entity. With each
+ * resulting event, the current state of the release entity is written to the release topic.
  */
 public class ProvisioningServiceImpl implements ProvisioningService {
 
@@ -62,11 +61,17 @@ public class ProvisioningServiceImpl implements ProvisioningService {
             Flow.<CoreSubscription>create().mapAsync(1, this::consumeSubscription));
     }
 
+    /**
+     * Consumes a single subscription received from the core service. Corresponding to the operation
+     * it sends a command to the release entity.
+     *
+     * @param subscription the received subscription
+     * @return eventually done
+     */
     private CompletionStage<Done> consumeSubscription(
         CoreSubscription subscription) {
 
         try {
-
             if (subscription == null || subscription.getId() == null) {
                 LOGGER.warn("Received invalid subscription");
                 return CompletableFuture.completedFuture(Done.getInstance());
@@ -120,6 +125,14 @@ public class ProvisioningServiceImpl implements ProvisioningService {
                 this::streamRelease);
     }
 
+    /**
+     * Streams for every new release event the current state of its entity to the release topic of
+     * the provisioning service.
+     *
+     * @param tag    the entity tag
+     * @param offset the stream offset
+     * @return the stream
+     */
     private Source<Pair<ProvisioningRelease, Offset>, ?> streamRelease(
         AggregateEventTag<ReleaseEvent> tag, Offset offset) {
         return registry.eventStream(tag, offset)

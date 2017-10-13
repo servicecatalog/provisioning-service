@@ -21,6 +21,11 @@ import org.slf4j.LoggerFactory;
 import java.util.Optional;
 import java.util.UUID;
 
+/**
+ * Entity class for releases.
+ * <p>
+ * Manages the state machine for the release process within each entity.
+ */
 public class ReleaseEntity extends
     PersistentEntity<ReleaseCommand, ReleaseEvent, ReleaseState> {
 
@@ -57,6 +62,12 @@ public class ReleaseEntity extends
         }
     }
 
+    /**
+     * Initial behaviour.
+     *
+     * @param state the current state
+     * @return the behaviour
+     */
     private Behavior none(ReleaseState state) {
         BehaviorBuilder builder = newBehaviorBuilder(state);
 
@@ -87,6 +98,12 @@ public class ReleaseEntity extends
         return builder.build();
     }
 
+    /**
+     * Behaviour during installation initialization.
+     *
+     * @param state the current state
+     * @return the behaviour
+     */
     private Behavior installing(ReleaseState state) {
         BehaviorBuilder builder = newBehaviorBuilder(state);
 
@@ -129,6 +146,12 @@ public class ReleaseEntity extends
         return builder.build();
     }
 
+    /**
+     * Behaviour during update initialization.
+     *
+     * @param state the current state
+     * @return the behaviour
+     */
     private Behavior updating(ReleaseState state) {
         BehaviorBuilder builder = newBehaviorBuilder(state);
 
@@ -172,6 +195,12 @@ public class ReleaseEntity extends
         return builder.build();
     }
 
+    /**
+     * Behaviour during deletion initialization.
+     *
+     * @param state the current state
+     * @return the behaviour
+     */
     private Behavior deleting(ReleaseState state) {
         BehaviorBuilder builder = newBehaviorBuilder(state);
 
@@ -207,6 +236,12 @@ public class ReleaseEntity extends
         return builder.build();
     }
 
+    /**
+     * Behaviour during pending release state.
+     *
+     * @param state the current state
+     * @return the behaviour
+     */
     private Behavior pending(ReleaseState state) {
         BehaviorBuilder builder = newBehaviorBuilder(state);
 
@@ -258,6 +293,12 @@ public class ReleaseEntity extends
         return builder.build();
     }
 
+    /**
+     * Behaviour after a confirmed deployment.
+     *
+     * @param state the current state
+     * @return the behaviour
+     */
     private Behavior deployed(ReleaseState state) {
         BehaviorBuilder builder = newBehaviorBuilder(state);
 
@@ -303,6 +344,12 @@ public class ReleaseEntity extends
         return builder.build();
     }
 
+    /**
+     * Behaviour after a confirmed deletion.
+     *
+     * @param state the current state
+     * @return the behaviour
+     */
     private Behavior deleted(ReleaseState state) {
         BehaviorBuilder builder = newBehaviorBuilder(state);
 
@@ -329,6 +376,12 @@ public class ReleaseEntity extends
         return builder.build();
     }
 
+    /**
+     * Behaviour after a failure on an installation attempt.
+     *
+     * @param state the current state
+     * @return the behaviour
+     */
     private Behavior failed(ReleaseState state) {
         BehaviorBuilder builder = newBehaviorBuilder(state);
 
@@ -359,6 +412,12 @@ public class ReleaseEntity extends
         return builder.build();
     }
 
+    /**
+     * Behaviour after a failure on an active release.
+     *
+     * @param state the current state
+     * @return the behaviour
+     */
     private Behavior error(ReleaseState state) {
         BehaviorBuilder builder = newBehaviorBuilder(state);
 
@@ -399,6 +458,13 @@ public class ReleaseEntity extends
         return builder.build();
     }
 
+    /**
+     * Command handler for installing releases.
+     *
+     * @param cmd the command
+     * @param ctx the context
+     * @return a InstallingRelease event
+     */
     private Persist<ReleaseEvent> installingRelease(
         ReleaseCommand.UpdateRelease cmd, CommandContext<Done> ctx) {
         LOGGER.info("Install release with id {}", entityId());
@@ -409,6 +475,13 @@ public class ReleaseEntity extends
             evt -> ctx.reply(Done.getInstance()));
     }
 
+    /**
+     * Command handler for updating releases.
+     *
+     * @param cmd the command
+     * @param ctx the context
+     * @return a UpdatingRelease event
+     */
     private Persist<ReleaseEvent> updatingRelease(
         ReleaseCommand.UpdateRelease cmd, CommandContext<Done> ctx) {
         LOGGER.info("Update release with id {}", entityId());
@@ -418,6 +491,13 @@ public class ReleaseEntity extends
             evt -> ctx.reply(Done.getInstance()));
     }
 
+    /**
+     * Command handler for deleting releases.
+     *
+     * @param cmd the command
+     * @param ctx the context
+     * @return a DeletingRelease event
+     */
     private Persist<ReleaseEvent> deletingRelease(
         ReleaseCommand.DeleteRelease cmd, CommandContext<Done> ctx) {
         LOGGER.info("Delete release with id {}", entityId());
@@ -427,6 +507,13 @@ public class ReleaseEntity extends
             evt -> ctx.reply(Done.getInstance()));
     }
 
+    /**
+     * Command handler for pending releases.
+     *
+     * @param cmd the command
+     * @param ctx the context
+     * @return a PendingRelease event
+     */
     private Persist<ReleaseEvent> pendingRelease(
         ReleaseCommand.InternalInitiateRelease cmd, CommandContext<Done> ctx) {
         LOGGER.info("Pending release with id {}", entityId());
@@ -436,15 +523,29 @@ public class ReleaseEntity extends
             evt -> ctx.reply(Done.getInstance()));
     }
 
+    /**
+     * Command handler for deployed releases.
+     *
+     * @param cmd the command
+     * @param ctx the context
+     * @return a DeployedRelease event
+     */
     private Persist<ReleaseEvent> deployedRelease(
         ReleaseCommand.InternalConfirmRelease cmd, CommandContext<Done> ctx) {
         LOGGER.info("Deployed release with id {}", entityId());
         return ctx.thenPersist(
             new ReleaseEvent.DeployedRelease(UUID.fromString(entityId()),
-                System.currentTimeMillis(), cmd.getServices()),
+                System.currentTimeMillis(), cmd.getEndpoints()),
             evt -> ctx.reply(Done.getInstance()));
     }
 
+    /**
+     * Command handler for deleted releases.
+     *
+     * @param cmd the command
+     * @param ctx the context
+     * @return a DeletedRelease event
+     */
     private Persist<ReleaseEvent> deletedRelease(
         ReleaseCommand cmd, CommandContext<Done> ctx) {
         LOGGER.info("Deleted release with id {}", entityId());
@@ -454,6 +555,13 @@ public class ReleaseEntity extends
             evt -> ctx.reply(Done.getInstance()));
     }
 
+    /**
+     * Command handler for failed new releases.
+     *
+     * @param cmd the command
+     * @param ctx the context
+     * @return a FailedRelease event
+     */
     private Persist<ReleaseEvent> failedRelease(
         ReleaseCommand.InternalFailRelease cmd, CommandContext<Done> ctx) {
         LOGGER.info("Failed release with id {}", entityId());
@@ -463,6 +571,13 @@ public class ReleaseEntity extends
             evt -> ctx.reply(Done.getInstance()));
     }
 
+    /**
+     * Command handler for failed active releases.
+     *
+     * @param cmd the command
+     * @param ctx the context
+     * @return a ErrorRelease event
+     */
     private Persist<ReleaseEvent> errorRelease(
         ReleaseCommand.InternalFailRelease cmd, CommandContext<Done> ctx) {
         LOGGER.info("Error release with id {}", entityId());
@@ -472,6 +587,11 @@ public class ReleaseEntity extends
             evt -> ctx.reply(Done.getInstance()));
     }
 
+    /**
+     * Adds basic behaviour to the given builder.
+     *
+     * @param builder the behaviour builder
+     */
     private void addGetReleaseHandler(BehaviorBuilder builder) {
         builder.setReadOnlyCommandHandler(ReleaseCommand.GetRelease.class,
             (cmd, ctx) -> ctx.reply(state().getAsAPI()));
@@ -481,6 +601,12 @@ public class ReleaseEntity extends
             (cmd, ctx) -> ctx.reply(state()));
     }
 
+    /**
+     * Command handler for ignored commands.
+     *
+     * @param cmd the command
+     * @param ctx the context
+     */
     private void ignore(Object cmd, ReadOnlyCommandContext<Done> ctx) {
         ctx.reply(Done.getInstance());
     }

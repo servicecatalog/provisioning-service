@@ -3,12 +3,12 @@
  *
  *    Copyright FUJITSU LIMITED 2017
  *
- *    Creation Date: 2017-09-21
+ *    Creation Date: 2017-10-13
  *
  * ****************************************************************************
  */
 
-package org.oscm.provisioning.impl.it;
+package org.oscm.provisioning.it;
 
 import akka.NotUsed;
 import akka.stream.javadsl.Source;
@@ -131,8 +131,7 @@ public class ProvisioningIT {
         @Override
         public ServiceCall<NotUsed, ReleaseStatusResponse> status(String release, String version) {
             return req -> CompletableFuture.completedFuture(new ReleaseStatusResponse("", "",
-                new Info(new Status(ReleaseStatusResponse.DEPLOYED, null, "", ""), null, null,
-                    null)));
+                new Info(new Status(ReleaseStatusResponse.DEPLOYED, ""))));
         }
     }
 }

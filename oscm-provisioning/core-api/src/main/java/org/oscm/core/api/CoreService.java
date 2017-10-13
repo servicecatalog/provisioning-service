@@ -19,11 +19,19 @@ import org.oscm.core.api.data.CoreSubscription;
 import static com.lightbend.lagom.javadsl.api.Service.named;
 import static com.lightbend.lagom.javadsl.api.Service.topic;
 
+/**
+ * Service interface describing OSCM core topics used by the provisioning service.
+ */
 public interface CoreService extends Service {
 
     String SERVICE_NAME = "core";
     String TOPIC_SUBSCRIPTION = "core-subscription";
 
+    /**
+     * Kafka topic for subscriptions.
+     *
+     * @return the topic
+     */
     Topic<CoreSubscription> subscriptionTopic();
 
     @Override

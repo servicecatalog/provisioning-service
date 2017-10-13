@@ -24,8 +24,6 @@ import static com.lightbend.lagom.javadsl.api.Service.restCall;
 
 /**
  * Lagom interface for the provisioning service.
- *
- * @author miethaner
  */
 public interface ProvisioningService extends Service {
 
@@ -33,14 +31,14 @@ public interface ProvisioningService extends Service {
     String TOPIC_RELEASE = "provisioning-release";
 
     /**
-     * Health check endpoint.
+     * Endpoint for health checks.
      *
      * @return the service call
      */
     ServiceCall<NotUsed, String> health();
 
     /**
-     * Kafka topic for release entities in API format.
+     * Kafka topic for releases.
      *
      * @return the topic
      */

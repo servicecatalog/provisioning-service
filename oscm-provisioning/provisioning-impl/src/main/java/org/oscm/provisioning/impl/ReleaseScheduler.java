@@ -22,6 +22,7 @@ import com.lightbend.lagom.javadsl.persistence.cassandra.CassandraReadSide;
 import com.lightbend.lagom.javadsl.persistence.cassandra.CassandraSession;
 import org.oscm.lagom.enums.Messages;
 import org.oscm.lagom.exceptions.InternalException;
+import org.oscm.lagom.filters.BasicAuthFilter;
 import org.oscm.provisioning.impl.data.*;
 import org.oscm.provisioning.impl.data.ReleaseCommand.*;
 import org.oscm.rudder.api.RudderService;
@@ -44,6 +45,13 @@ import java.util.stream.Collectors;
 
 import static com.lightbend.lagom.javadsl.persistence.cassandra.CassandraReadSide.completedStatement;
 
+/**
+ * Scheduler to execute, confirm and monitor releases via rudder.
+ * <p>
+ * It uses a database table to collect qualifying entities that are sharded over the cluster via
+ * their tags. The scheduler starts two watchdogs to handle releases. One for fast execution and one
+ * for slow monitoring. State changes are propagated to the entities via commands.
+ */
 @Singleton
 public class ReleaseScheduler {
 
@@ -51,7 +59,7 @@ public class ReleaseScheduler {
     private static final String REGEX_NEXT = "==>";
     private static final String REGEX_NONE = "<none>";
     private static final String REGEX_NODES = "<nodes>";
-    private static final String REGEX_REPLACE = "<nodes>";
+    private static final String REGEX_REPLACE = "\\{(\\w+)\\}";
 
     private static final int SERVICE_COLUMNS = 5;
     private static final int SERVICE_COLUMN_NAME = 0;
@@ -63,6 +71,7 @@ public class ReleaseScheduler {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(ReleaseScheduler.class);
 
+    private final ActorSystem system;
     private final RudderClientManager rudderClientManager;
     private final CassandraSession session;
     private final PersistentEntityRegistry registry;
@@ -75,6 +84,7 @@ public class ReleaseScheduler {
         CassandraSession session, ActorSystem system, ReadSide readSide,
         PersistentEntityRegistry registry, Materializer materializer) {
 
+        this.system = system;
         this.rudderClientManager = rudderClientManager;
         this.session = session;
         this.registry = registry;
@@ -103,23 +113,35 @@ public class ReleaseScheduler {
             .schedule(initialDelay, monitorInterval, this::monitorReleases, system.dispatcher());
     }
 
+    /**
+     * Watchdog task for fast execution and conformation of releases.
+     */
     private void executeReleases() {
-        serveRelease(ReleaseStatus.INSTALLING, ReleaseStatus.UPDATING, ReleaseStatus.DELETING,
-            ReleaseStatus.PENDING);
+        serveRelease(Arrays.asList(ReleaseStatus.INSTALLING, ReleaseStatus.UPDATING,
+            ReleaseStatus.DELETING, ReleaseStatus.PENDING));
     }
 
+    /**
+     * Watchdog task for slow monitoring of releases.
+     */
     private void monitorReleases() {
-        serveRelease(ReleaseStatus.DEPLOYED);
+        serveRelease(Collections.singletonList(ReleaseStatus.DEPLOYED));
     }
 
-    private void serveRelease(ReleaseStatus... statuses) {
+    /**
+     * Common watchdog task. Checks the database for entries with the corresponding tags and
+     * handles them according to their status.
+     *
+     * @param statuses the list of statuses to check for
+     */
+    private void serveRelease(List<ReleaseStatus> statuses) {
         try {
             session.select("SELECT id, status FROM releaseSchedule WHERE tag IN ?", tags)
                 .runForeach(row -> {
                     UUID id = row.getUUID("id");
                     ReleaseStatus status = ReleaseStatus.valueOf(row.getString("status"));
 
-                    if (!Arrays.asList(statuses).contains(status)) {
+                    if (!statuses.contains(status)) {
                         return;
                     }
 
@@ -129,7 +151,7 @@ public class ReleaseScheduler {
                     ref.ask(InternalGetReleaseState.INSTANCE).thenCompose(
                         state -> {
                             Release release = state.getRelease();
-                            String instance = state.getInstance();
+                            String instanceId = state.getInstanceId();
 
                             URI target;
                             try {
@@ -147,11 +169,11 @@ public class ReleaseScheduler {
                             case UPDATING:
                                 return updateRelease(service, ref, release, state);
                             case DELETING:
-                                return deleteRelease(service, ref, instance);
+                                return deleteRelease(service, ref, instanceId);
                             case PENDING:
-                                return commitRelease(service, ref, release, instance, target);
+                                return commitRelease(service, ref, release, instanceId, target);
                             case DEPLOYED:
-                                return checkRelease(service, ref, release, instance);
+                                return checkRelease(service, ref, release, instanceId);
                             default:
                                 return CompletableFuture.completedFuture(Done.getInstance());
                             }
@@ -165,10 +187,24 @@ public class ReleaseScheduler {
         }
     }
 
+    /**
+     * Task to install the release via rudder.
+     *
+     * @param service the rudder service
+     * @param ref     the entity reference
+     * @param release the release info
+     * @param state   the current entity state
+     * @return eventually done
+     */
     private CompletionStage<Done> installRelease(RudderService service,
         PersistentEntityRef<ReleaseCommand> ref, Release release, ReleaseState state) {
+
+        String user = system.settings().config().getString(Config.RUDDER_USER);
+        String password = system.settings().config().getString(Config.RUDDER_PASSWORD);
+
         return service.install()
-            .invoke(release.getAsInstallRequest(state.getInstance()))
+            .handleRequestHeader(BasicAuthFilter.getFilter(user, password))
+            .invoke(release.getAsInstallRequest(state.getInstanceId()))
             .thenCompose(notUsed -> ref.ask(InternalInitiateRelease.INSTANCE))
             .exceptionally(
                 throwable -> {
@@ -187,10 +223,24 @@ public class ReleaseScheduler {
                 });
     }
 
+    /**
+     * Task to update the release via rudder.
+     *
+     * @param service the rudder service
+     * @param ref     the entity reference
+     * @param release the release info
+     * @param state   the current entity state
+     * @return eventually done
+     */
     private CompletionStage<Done> updateRelease(RudderService service,
         PersistentEntityRef<ReleaseCommand> ref, Release release, ReleaseState state) {
+
+        String user = system.settings().config().getString(Config.RUDDER_USER);
+        String password = system.settings().config().getString(Config.RUDDER_PASSWORD);
+
         return service.update()
-            .invoke(release.getAsUpdateRequest(state.getInstance()))
+            .handleRequestHeader(BasicAuthFilter.getFilter(user, password))
+            .invoke(release.getAsUpdateRequest(state.getInstanceId()))
             .thenCompose(notUsed -> ref.ask(InternalInitiateRelease.INSTANCE))
             .exceptionally(
                 throwable -> {
@@ -209,10 +259,24 @@ public class ReleaseScheduler {
                 });
     }
 
+    /**
+     * Task to delete the release via rudder.
+     *
+     * @param service    the rudder service
+     * @param ref        the entity reference
+     * @param instanceId the instance id of the release
+     * @return eventually done
+     */
     private CompletionStage<Done> deleteRelease(RudderService service,
-        PersistentEntityRef<ReleaseCommand> ref, String instance) {
-        return service.delete(instance)
-            .invoke().thenCompose(notUsed -> ref.ask(InternalInitiateRelease.INSTANCE))
+        PersistentEntityRef<ReleaseCommand> ref, String instanceId) {
+
+        String user = system.settings().config().getString(Config.RUDDER_USER);
+        String password = system.settings().config().getString(Config.RUDDER_PASSWORD);
+
+        return service.delete(instanceId)
+            .handleRequestHeader(BasicAuthFilter.getFilter(user, password))
+            .invoke()
+            .thenCompose(notUsed -> ref.ask(InternalInitiateRelease.INSTANCE))
             .exceptionally(
                 throwable -> {
                     if (throwable instanceof TransportException) {
@@ -230,24 +294,39 @@ public class ReleaseScheduler {
                 });
     }
 
+    /**
+     * Task to check the release via rudder and to commit it if ready.
+     *
+     * @param service    the rudder service
+     * @param ref        the entity reference
+     * @param release    the release info
+     * @param instanceId the instance id of the release
+     * @param target     the URI of the target rudder proxy
+     * @return eventually done
+     */
     private CompletionStage<Done> commitRelease(RudderService service,
-        PersistentEntityRef<ReleaseCommand> ref, Release release, String instance, URI target) {
-        return service.status(instance, release.getVersion())
+        PersistentEntityRef<ReleaseCommand> ref, Release release, String instanceId, URI target) {
+
+        String user = system.settings().config().getString(Config.RUDDER_USER);
+        String password = system.settings().config().getString(Config.RUDDER_PASSWORD);
+
+        return service.status(instanceId, release.getVersion())
+            .handleRequestHeader(BasicAuthFilter.getFilter(user, password))
             .invoke()
             .thenCompose(
                 response -> {
                     Integer code = response.getInfo().getStatus().getCode();
 
                     switch (code) {
-                    case ReleaseStatusResponse.UNKNOWN:
+                    case ReleaseStatusResponse.Info.Status.UNKNOWN:
                         return CompletableFuture.completedFuture(Done.getInstance());
-                    case ReleaseStatusResponse.DEPLOYED:
-                        Map<String, String> services = extractServices(release.getEndpoints(),
-                            response.getInfo().getStatus().getResources(), instance,
+                    case ReleaseStatusResponse.Info.Status.DEPLOYED:
+                        Map<String, String> endpoints = extractEndpoints(release.getEndpoints(),
+                            response.getInfo().getStatus().getResources(), instanceId,
                             target.getHost());
                         return ref.ask(
-                            new InternalConfirmRelease(services));
-                    case ReleaseStatusResponse.DELETED:
+                            new InternalConfirmRelease(endpoints));
+                    case ReleaseStatusResponse.Info.Status.DELETED:
                         return ref.ask(InternalDeleteRelease.INSTANCE);
                     default:
                         InternalException ie = new InternalException(
@@ -274,18 +353,32 @@ public class ReleaseScheduler {
                 });
     }
 
+    /**
+     * Task to check the release and report a failure if not ready.
+     *
+     * @param service    the rudder service
+     * @param ref        the entity reference
+     * @param release    the release info
+     * @param instanceId the instance id of the release
+     * @return eventually done
+     */
     private CompletionStage<Done> checkRelease(RudderService service,
-        PersistentEntityRef<ReleaseCommand> ref, Release release, String instance) {
-        return service.status(instance, release.getVersion())
+        PersistentEntityRef<ReleaseCommand> ref, Release release, String instanceId) {
+
+        String user = system.settings().config().getString(Config.RUDDER_USER);
+        String password = system.settings().config().getString(Config.RUDDER_PASSWORD);
+
+        return service.status(instanceId, release.getVersion())
+            .handleRequestHeader(BasicAuthFilter.getFilter(user, password))
             .invoke()
             .thenCompose(
                 response -> {
                     Integer code = response.getInfo().getStatus().getCode();
 
                     switch (code) {
-                    case ReleaseStatusResponse.DEPLOYED:
+                    case ReleaseStatusResponse.Info.Status.DEPLOYED:
                         return CompletableFuture.completedFuture(Done.getInstance());
-                    case ReleaseStatusResponse.DELETED:
+                    case ReleaseStatusResponse.Info.Status.DELETED:
                         return ref.ask(InternalDeleteRelease.INSTANCE);
                     default:
                         InternalException ie = new InternalException(
@@ -310,8 +403,18 @@ public class ReleaseScheduler {
                 });
     }
 
-    private Map<String, String> extractServices(Map<String, String> templates, String resources,
-        String instance, String host) {
+    /**
+     * Extracts the service endpoints from the given resource string and replaces the matches in the
+     * given templates.
+     *
+     * @param templates  the endpoint template map
+     * @param resources  the resource string of the release
+     * @param instanceId the instance id of the release
+     * @param host       the host of the target cluster
+     * @return the replaced endpoint map
+     */
+    private Map<String, String> extractEndpoints(Map<String, String> templates, String resources,
+        String instanceId, String host) {
 
         if (templates == null) {
             return null;
@@ -338,7 +441,7 @@ public class ReleaseScheduler {
             String extIp = words[i + SERVICE_COLUMN_EXT_IP];
             String ports = words[i + SERVICE_COLUMN_PORTS];
 
-            name = name.replace(instance, "");
+            name = name.replace(instanceId, "");
 
             List<String> portList = Arrays.stream(ports.split(","))
                 .filter(port -> port.contains(":"))
@@ -377,6 +480,11 @@ public class ReleaseScheduler {
         return endpoints;
     }
 
+    /**
+     * Read side processor for release events.
+     * <p>
+     * Manages the entries in the scheduler database table according to events.
+     */
     public static class ReleaseProcessor
         extends ReadSideProcessor<ReleaseEvent> {
 
@@ -421,6 +529,11 @@ public class ReleaseScheduler {
                 .build();
         }
 
+        /**
+         * Creates the database table for the scheduler.
+         *
+         * @return eventually done
+         */
         private CompletionStage<Done> createTable() {
             return session.executeCreateTable(
                 "CREATE TABLE IF NOT EXISTS releaseSchedule ( " +
@@ -432,6 +545,11 @@ public class ReleaseScheduler {
             );
         }
 
+        /**
+         * Prepares the insert statement for the scheduler table.
+         *
+         * @return eventually done
+         */
         private CompletionStage<Done> prepareInsertStatement() {
             return session.prepare("INSERT INTO releaseSchedule(id, tag, status) VALUES (?, ?, ?)")
                 .thenApply(s -> {
@@ -440,6 +558,11 @@ public class ReleaseScheduler {
                 });
         }
 
+        /**
+         * Prepares the update statement for the scheduler table.
+         *
+         * @return eventually done
+         */
         private CompletionStage<Done> prepareUpdateStatement() {
             return session.prepare("UPDATE releaseSchedule SET status = ? WHERE id = ? AND tag = ?")
                 .thenApply(s -> {
@@ -448,6 +571,11 @@ public class ReleaseScheduler {
                 });
         }
 
+        /**
+         * Prepares the delete statement for the scheduler table.
+         *
+         * @return eventually done
+         */
         private CompletionStage<Done> prepareDeleteStatement() {
             return session.prepare("DELETE FROM releaseSchedule WHERE id = ? AND tag = ?")
                 .thenApply(s -> {
@@ -456,6 +584,13 @@ public class ReleaseScheduler {
                 });
         }
 
+        /**
+         * Inserts a new entry for the given event and status into the scheduler table.
+         *
+         * @param event  the release event
+         * @param status the release status
+         * @return eventually bound statement
+         */
         private CompletionStage<List<BoundStatement>> insert(ReleaseEvent event,
             ReleaseStatus status) {
 
@@ -464,6 +599,13 @@ public class ReleaseScheduler {
             ));
         }
 
+        /**
+         * Updates the corresponding entry with the given event and status in the scheduler table.
+         *
+         * @param event  the release event
+         * @param status the release status
+         * @return eventually bound statement
+         */
         private CompletionStage<List<BoundStatement>> update(ReleaseEvent event,
             ReleaseStatus status) {
 
@@ -472,6 +614,12 @@ public class ReleaseScheduler {
             ));
         }
 
+        /**
+         * Deletes the corresponding entry to the given event in the scheduler table.
+         *
+         * @param event the release event
+         * @return eventually bound statement
+         */
         private CompletionStage<List<BoundStatement>> delete(ReleaseEvent event) {
             return completedStatement(deleteStatement.bind(
                 event.getId(), ReleaseEvent.TAG.forEntityId(event.getIdString()).tag()

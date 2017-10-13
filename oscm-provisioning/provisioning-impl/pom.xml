@@ -1,11 +1,11 @@
 <project xmlns="http://maven.apache.org/POM/4.0.0"
-         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instanceId"
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0
                       http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
     <parent>
         <groupId>org.oscm.provisioning</groupId>
-        <artifactId>oscm-provisioning</artifactId>
+        <artifactId>oscm-provisioning-helm</artifactId>
         <version>1.0-SNAPSHOT</version>
     </parent>
 
@@ -47,6 +47,10 @@
             <artifactId>lagom-javadsl-client_2.11</artifactId>
         </dependency>
         <dependency>
+            <groupId>com.lightbend.lagom</groupId>
+            <artifactId>lagom-javadsl-jackson_2.11</artifactId>
+        </dependency>
+        <dependency>
             <groupId>com.lightbend</groupId>
             <artifactId>lagom14-java-service-locator-dns_2.11</artifactId>
         </dependency>
@@ -73,7 +77,7 @@
                 <configuration>
                     <images>
                         <image>
-                            <name>%g/%a:%l</name>
+                            <name>%g/${project.parent.artifactId}:%l</name>
                             <build>
                                 <from>openjdk:8-jre-alpine</from>
                                 <tags>

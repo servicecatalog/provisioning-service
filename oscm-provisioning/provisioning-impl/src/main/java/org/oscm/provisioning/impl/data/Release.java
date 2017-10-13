@@ -20,6 +20,9 @@ import org.oscm.rudder.api.data.UpdateReleaseRequest;
 import java.util.Collections;
 import java.util.Map;
 
+/**
+ * Data class for release information.
+ */
 public class Release implements Jsonable {
 
     public static final String FIELD_TARGET = "target";

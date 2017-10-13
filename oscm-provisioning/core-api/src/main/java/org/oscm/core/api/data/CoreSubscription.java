@@ -14,12 +14,13 @@ import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import org.oscm.lagom.data.Identity;
 
-import javax.annotation.concurrent.Immutable;
 import java.util.Collections;
 import java.util.Map;
 import java.util.UUID;
 
-@Immutable
+/**
+ * <b>Public</b> data class for the subscription topic of the core service.
+ */
 public class CoreSubscription extends Identity {
 
     public static final String FIELD_OPERATION = "operation";
@@ -33,6 +34,9 @@ public class CoreSubscription extends Identity {
     public static final String OPTION_UPDATE = "upd";
     public static final String OPTION_DELETE = "del";
 
+    /**
+     * Basic commands for subscriptions
+     */
     public enum Operation {
         @JsonProperty(OPTION_UPDATE)
         UPDATE,
@@ -41,6 +45,9 @@ public class CoreSubscription extends Identity {
         DELETE
     }
 
+    /**
+     * Helm chart information
+     */
     public static class Template {
 
         public static final String FIELD_REPOSITORY = "repository";
@@ -51,6 +58,13 @@ public class CoreSubscription extends Identity {
         private String name;
         private String version;
 
+        /**
+         * Creates a new template.
+         *
+         * @param repository the chart repository, null returns null
+         * @param name       the chart name, null returns null
+         * @param version    the chart version, null returns null
+         */
         @JsonCreator
         public Template(@JsonProperty(FIELD_REPOSITORY) String repository,
             @JsonProperty(FIELD_NAME) String name,
@@ -60,14 +74,29 @@ public class CoreSubscription extends Identity {
             this.version = version;
         }
 
+        /**
+         * Gets the charts repository.
+         *
+         * @return the repository, null if not set
+         */
         public String getRepository() {
             return repository;
         }
 
+        /**
+         * Gets the charts name.
+         *
+         * @return the name, null if not set
+         */
         public String getName() {
             return name;
         }
 
+        /**
+         * Gets the charts version.
+         *
+         * @return the version, null if not set
+         */
         public String getVersion() {
             return version;
         }
@@ -81,6 +110,19 @@ public class CoreSubscription extends Identity {
     private Map<String, Object> parameters;
     private Map<String, String> endpoints;
 
+    /**
+     * Creates a new subscription.
+     *
+     * @param id         the entities id, null returns null
+     * @param timestamp  the entities creation timestamp, null returns null
+     * @param operation  the operation for the subscription, null returns null
+     * @param target     the URL of the target rudder proxy, null returns null
+     * @param namespace  the name space to deploy to, null returns null
+     * @param template   the helm chart to use, null returns null
+     * @param labels     the labels to be attached to the deployment, null returns empty map
+     * @param parameters the parameters to be used for the deployment, null returns empty map
+     * @param endpoints  the endpoint templates for the deployment, null returns empty map
+     */
     @JsonCreator
     public CoreSubscription(@JsonProperty(FIELD_ID) UUID id,
         @JsonProperty(FIELD_TIMESTAMP) Long timestamp,
@@ -101,22 +143,47 @@ public class CoreSubscription extends Identity {
         this.endpoints = endpoints;
     }
 
+    /**
+     * Gets the basic operation for this event.
+     *
+     * @return the operation, null if not set
+     */
     public Operation getOperation() {
         return operation;
     }
 
+    /**
+     * Gets the URL of the target Rudder proxy.
+     *
+     * @return the target URL, null if not set
+     */
     public String getTarget() {
         return target;
     }
 
+    /**
+     * Gets the namespace to deploy to.
+     *
+     * @return the namespace, null if not set
+     */
     public String getNamespace() {
         return namespace;
     }
 
+    /**
+     * Gets the location, name and version of the helm chart.
+     *
+     * @return the helm chart template, null if not set
+     */
     public Template getTemplate() {
         return template;
     }
 
+    /**
+     * Gets the labels that should be attached to the deployment.
+     *
+     * @return the labels
+     */
     public Map<String, String> getLabels() {
         if (labels != null) {
             return Collections.unmodifiableMap(labels);
@@ -125,6 +192,11 @@ public class CoreSubscription extends Identity {
         }
     }
 
+    /**
+     * Gets the parameters (values) for the deployment.
+     *
+     * @return the parameters
+     */
     public Map<String, Object> getParameters() {
         if (parameters != null) {
             return Collections.unmodifiableMap(parameters);
@@ -133,6 +205,11 @@ public class CoreSubscription extends Identity {
         }
     }
 
+    /**
+     * Gets the endpoint templates for the deployment.
+     *
+     * @return the endpoints
+     */
     public Map<String, String> getEndpoints() {
         if (endpoints != null) {
             return Collections.unmodifiableMap(endpoints);

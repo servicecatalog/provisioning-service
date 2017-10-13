@@ -14,161 +14,81 @@ import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
 /**
- * @author miethaner
+ * <b>Public</b> data class of the status endpoint of the rudder service.
  */
 public class ReleaseStatusResponse {
-
-    public static final int UNKNOWN = 0;
-    public static final int DEPLOYED = 1;
-    public static final int DELETED = 2;
-    public static final int SUPERSEDED = 3;
-    public static final int FAILED = 4;
 
     public static class Info {
 
         public static class Status {
 
-            public static class Details {
-
-                public static final String FIELD_TYPE_URL = "type_url";
-                public static final String FIELD_VALUE = "value";
-
-                private String typeUrl;
-
-                private Byte[] value;
-
-                @JsonCreator
-                public Details(@JsonProperty(FIELD_TYPE_URL) String typeUrl,
-                    @JsonProperty(FIELD_VALUE) Byte[] value) {
-                    this.typeUrl = typeUrl;
-                    this.value = value;
-                }
-
-                @JsonProperty(FIELD_TYPE_URL)
-                public String getTypeUrl() {
-                    return typeUrl;
-                }
-
-                @JsonProperty(FIELD_VALUE)
-                public Byte[] getValue() {
-                    return value;
-                }
-            }
+            //Status codes for the helm deployments
+            public static final int UNKNOWN = 0;
+            public static final int DEPLOYED = 1;
+            public static final int DELETED = 2;
+            public static final int SUPERSEDED = 3;
+            public static final int FAILED = 4;
 
             public static final String FIELD_CODE = "code";
-            public static final String FIELD_DETAILS = "details";
             public static final String FIELD_RESOURCES = "resource";
-            public static final String FIELD_NOTES = "notes";
 
             private Integer code;
 
-            private Details details;
-
             private String resources;
 
-            private String notes;
-
+            /**
+             * Creates a new status info.
+             *
+             * @param code      the status code, null returns null
+             * @param resources the kubectl resource output, null returns null
+             */
             @JsonCreator
             public Status(@JsonProperty(FIELD_CODE) Integer code,
-                @JsonProperty(FIELD_DETAILS) Details details,
-                @JsonProperty(FIELD_RESOURCES) String resources,
-                @JsonProperty(FIELD_NOTES) String notes) {
+                @JsonProperty(FIELD_RESOURCES) String resources) {
                 this.code = code;
-                this.details = details;
                 this.resources = resources;
-                this.notes = notes;
             }
 
-            @JsonProperty(FIELD_CODE)
+            /**
+             * Gets the status code of the release.
+             *
+             * @return the status code, null if not set
+             */
             public Integer getCode() {
                 return code;
             }
 
-            @JsonProperty(FIELD_DETAILS)
-            public Details getDetails() {
-                return details;
-            }
-
-            @JsonProperty(FIELD_RESOURCES)
+            /**
+             * Gets the kubectl output for the release.
+             *
+             * @return the kubectl cli output, null if not set
+             */
             public String getResources() {
                 return resources;
-            }
-
-            @JsonProperty(FIELD_NOTES)
-            public String getNotes() {
-                return notes;
-            }
-        }
-
-        public static class Timestamp {
-
-            public static final String FIELD_SECONDS = "seconds";
-            public static final String FIELD_NANOS = "nanos";
-
-            private Long seconds;
-
-            private Integer nanos;
-
-            @JsonCreator
-            public Timestamp(@JsonProperty(FIELD_SECONDS) Long seconds,
-                @JsonProperty(FIELD_NANOS) Integer nanos) {
-                this.seconds = seconds;
-                this.nanos = nanos;
-            }
-
-            @JsonProperty(FIELD_SECONDS)
-            public Long getSeconds() {
-                return seconds;
-            }
-
-            @JsonProperty(FIELD_NANOS)
-            public Integer getNanos() {
-                return nanos;
             }
         }
 
         public static final String FIELD_STATUS = "status";
-        public static final String FIELD_FIRST_DEPLOYED = "first_deployed";
-        public static final String FIELD_LAST_DEPLOYED = "last_deployed";
-        public static final String FIELD_DELETED = "deleted";
 
         private Status status;
 
-        private Timestamp firstDeployed;
-
-        private Timestamp lastDeployed;
-
-        private Timestamp deleted;
-
+        /**
+         * Creates a new release info.
+         *
+         * @param status the status info, null returns null
+         */
         @JsonCreator
-        public Info(@JsonProperty(FIELD_STATUS) Status status,
-            @JsonProperty(FIELD_FIRST_DEPLOYED) Timestamp firstDeployed,
-            @JsonProperty(FIELD_LAST_DEPLOYED) Timestamp lastDeployed,
-            @JsonProperty(FIELD_DELETED) Timestamp deleted) {
+        public Info(@JsonProperty(FIELD_STATUS) Status status) {
             this.status = status;
-            this.firstDeployed = firstDeployed;
-            this.lastDeployed = lastDeployed;
-            this.deleted = deleted;
         }
 
-        @JsonProperty(FIELD_STATUS)
+        /**
+         * Gets the status object of the release.
+         *
+         * @return the status object, null if not set
+         */
         public Status getStatus() {
             return status;
-        }
-
-        @JsonProperty(FIELD_FIRST_DEPLOYED)
-        public Timestamp getFirstDeployed() {
-            return firstDeployed;
-        }
-
-        @JsonProperty(FIELD_LAST_DEPLOYED)
-        public Timestamp getLastDeployed() {
-            return lastDeployed;
-        }
-
-        @JsonProperty(FIELD_DELETED)
-        public Timestamp getDeleted() {
-            return deleted;
         }
     }
 
@@ -182,6 +102,13 @@ public class ReleaseStatusResponse {
 
     private Info info;
 
+    /**
+     * Creates a new status response.
+     *
+     * @param name      the release name (instance id), null returns null
+     * @param namespace the release namespace, null returns null
+     * @param info      the release info, null returns null
+     */
     @JsonCreator
     public ReleaseStatusResponse(@JsonProperty(FIELD_NAME) String name,
         @JsonProperty(FIELD_NAMESPACE) String namespace,
@@ -191,17 +118,29 @@ public class ReleaseStatusResponse {
         this.info = info;
     }
 
-    @JsonProperty(FIELD_NAME)
+    /**
+     * Gets the name of the release.
+     *
+     * @return the release name, null if not set
+     */
     public String getName() {
         return name;
     }
 
-    @JsonProperty(FIELD_NAMESPACE)
+    /**
+     * Gets the namespace of the release.
+     *
+     * @return the release namespace, null if not set
+     */
     public String getNamespace() {
         return namespace;
     }
 
-    @JsonProperty(FIELD_INFO)
+    /**
+     * Gets the Info object of the release.
+     *
+     * @return the info object, null if not set
+     */
     public Info getInfo() {
         return info;
     }

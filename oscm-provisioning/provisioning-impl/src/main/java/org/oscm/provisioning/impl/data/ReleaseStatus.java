@@ -11,8 +11,14 @@
 package org.oscm.provisioning.impl.data;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.lightbend.lagom.serialization.Jsonable;
 
-public enum ReleaseStatus {
+/**
+ * Enum class for release statuses.
+ * <p>
+ * Corresponds with the states of the release entity state machine.
+ */
+public enum ReleaseStatus implements Jsonable {
 
     @JsonProperty(Constants.OPTION_NONE)
     NONE,

@@ -16,6 +16,9 @@ import org.oscm.core.api.CoreService;
 import org.oscm.provisioning.api.ProvisioningService;
 import org.oscm.rudder.api.RudderService;
 
+/**
+ * Guice module for binding classes and resources for the provisioning service.
+ */
 public class ProvisioningModule extends AbstractModule implements
     ServiceGuiceSupport {
 
