@@ -100,14 +100,14 @@ public class ProvisioningServiceImpl implements ProvisioningService {
 
             stage.exceptionally(throwable -> {
                 LOGGER.error(
-                    String.format("Unable to consume subscription with id {} and timestamp {}",
+                    String.format("Unable to consume subscription with id %s and timestamp %s",
                         subscription.getId(), subscription.getTimestamp()), throwable);
                 return Done.getInstance();
             });
 
             return stage;
         } catch (Exception e) {
-            LOGGER.error(String.format("Unable to consume subscription with id {} and timestamp {}",
+            LOGGER.error(String.format("Unable to consume subscription with id %s and timestamp %s",
                 subscription.getId(), subscription.getTimestamp()), e);
             return CompletableFuture.completedFuture(Done.getInstance());
         }

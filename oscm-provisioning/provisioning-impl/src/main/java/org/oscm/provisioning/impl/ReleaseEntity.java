@@ -567,7 +567,7 @@ public class ReleaseEntity extends
         LOGGER.info("Failed release with id {}", entityId());
         return ctx.thenPersist(
             new ReleaseEvent.FailedRelease(UUID.fromString(entityId()),
-                System.currentTimeMillis(), cmd.getFailure()),
+                System.currentTimeMillis(), cmd.getReason()),
             evt -> ctx.reply(Done.getInstance()));
     }
 
@@ -583,7 +583,7 @@ public class ReleaseEntity extends
         LOGGER.info("Error release with id {}", entityId());
         return ctx.thenPersist(
             new ReleaseEvent.ErrorRelease(UUID.fromString(entityId()),
-                System.currentTimeMillis(), cmd.getFailure()),
+                System.currentTimeMillis(), cmd.getReason()),
             evt -> ctx.reply(Done.getInstance()));
     }
 

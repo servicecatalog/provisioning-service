@@ -155,8 +155,8 @@ public class ReleaseScheduler {
                             try {
                                 target = new URI(release.getTarget());
                             } catch (URISyntaxException e) {
-                                //TODO add custom exception
-                                return ref.ask(new InternalFailRelease(null));
+                                LOGGER.warn("Invalid URI for target rudder proxy", e);
+                                return ref.ask(new InternalFailRelease(e.getReason()));
                             }
 
                             RudderService service = rudderClientManager.getServiceForURI(target);
