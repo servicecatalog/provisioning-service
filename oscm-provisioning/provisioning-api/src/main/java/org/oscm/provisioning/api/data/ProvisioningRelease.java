@@ -12,7 +12,6 @@ package org.oscm.provisioning.api.data;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
-import org.oscm.lagom.data.Failure;
 import org.oscm.lagom.data.Identity;
 
 import java.util.Collections;
@@ -30,7 +29,7 @@ public class ProvisioningRelease extends Identity {
     public static final String FIELD_LABELS = "labels";
     public static final String FIELD_PARAMETERS = "parameters";
     public static final String FIELD_STATUS = "status";
-    public static final String FIELD_FAILURE = "failure";
+    public static final String FIELD_REASON = "reason";
     public static final String FIELD_INSTANCE_ID = "instance_id";
     public static final String FIELD_ENDPOINTS = "endpoints";
 
@@ -113,45 +112,6 @@ public class ProvisioningRelease extends Identity {
         FAILED //
     }
 
-    /**
-     * Creates a new release.
-     *
-     * @param id         the entities id, null returns null
-     * @param timestamp  the entities creation timestamp, null returns null
-     * @param target     the target URL of the rudder proxy, null returns null
-     * @param namespace  the namespace for the release, null returns null
-     * @param template   the helm chart information, null returns null
-     * @param labels     the labels for the release, null returns empty map
-     * @param parameters the parameters for the release, null returns empty map
-     * @param status     the status of the release, null returns null
-     * @param failure    any existing failure that happened with this event, null returns null
-     * @param instanceId the instance id of the release, null returns null
-     * @param endpoints  the endpoints of the release, null returns empty map
-     */
-    @JsonCreator
-    public ProvisioningRelease(@JsonProperty(FIELD_ID) UUID id,
-        @JsonProperty(FIELD_TIMESTAMP) Long timestamp,
-        @JsonProperty(FIELD_TARGET) String target,
-        @JsonProperty(FIELD_NAMESPACE) String namespace,
-        @JsonProperty(FIELD_TEMPLATE) Template template,
-        @JsonProperty(FIELD_LABELS) Map<String, String> labels,
-        @JsonProperty(FIELD_PARAMETERS) Map<String, Object> parameters,
-        @JsonProperty(FIELD_STATUS) Status status,
-        @JsonProperty(FIELD_FAILURE) Failure failure,
-        @JsonProperty(FIELD_INSTANCE_ID) String instanceId,
-        @JsonProperty(FIELD_ENDPOINTS) Map<String, String> endpoints) {
-        super(id, timestamp);
-        this.target = target;
-        this.namespace = namespace;
-        this.template = template;
-        this.labels = labels;
-        this.parameters = parameters;
-        this.status = status;
-        this.failure = failure;
-        this.instanceId = instanceId;
-        this.endpoints = endpoints;
-    }
-
     private String target;
 
     private String namespace;
@@ -164,11 +124,50 @@ public class ProvisioningRelease extends Identity {
 
     private Status status;
 
-    private Failure failure;
+    private String reason;
 
     private String instanceId;
 
     private Map<String, String> endpoints;
+
+    /**
+     * Creates a new release.
+     *
+     * @param id         the entities id, null returns null
+     * @param timestamp  the entities creation timestamp, null returns null
+     * @param target     the target URL of the rudder proxy, null returns null
+     * @param namespace  the namespace for the release, null returns null
+     * @param template   the helm chart information, null returns null
+     * @param labels     the labels for the release, null returns empty map
+     * @param parameters the parameters for the release, null returns empty map
+     * @param status     the status of the release, null returns null
+     * @param reason     the reason of any existing failure, null returns null
+     * @param instanceId the instance id of the release, null returns null
+     * @param endpoints  the endpoints of the release, null returns empty map
+     */
+    @JsonCreator
+    public ProvisioningRelease(@JsonProperty(FIELD_ID) UUID id,
+        @JsonProperty(FIELD_TIMESTAMP) Long timestamp,
+        @JsonProperty(FIELD_TARGET) String target,
+        @JsonProperty(FIELD_NAMESPACE) String namespace,
+        @JsonProperty(FIELD_TEMPLATE) Template template,
+        @JsonProperty(FIELD_LABELS) Map<String, String> labels,
+        @JsonProperty(FIELD_PARAMETERS) Map<String, Object> parameters,
+        @JsonProperty(FIELD_STATUS) Status status,
+        @JsonProperty(FIELD_REASON) String reason,
+        @JsonProperty(FIELD_INSTANCE_ID) String instanceId,
+        @JsonProperty(FIELD_ENDPOINTS) Map<String, String> endpoints) {
+        super(id, timestamp);
+        this.target = target;
+        this.namespace = namespace;
+        this.template = template;
+        this.labels = labels;
+        this.parameters = parameters;
+        this.status = status;
+        this.reason = reason;
+        this.instanceId = instanceId;
+        this.endpoints = endpoints;
+    }
 
     /**
      * Gets the URL of the target rudder proxy.
@@ -239,13 +238,13 @@ public class ProvisioningRelease extends Identity {
     }
 
     /**
-     * Gets the failure for this event if existing.
+     * Gets the reason for any failure.
      *
-     * @return the failure, null if not set
+     * @return the reason, null if not set
      */
-    @JsonProperty(FIELD_FAILURE)
-    public Failure getFailure() {
-        return failure;
+    @JsonProperty(FIELD_REASON)
+    public String getReason() {
+        return reason;
     }
 
     /**

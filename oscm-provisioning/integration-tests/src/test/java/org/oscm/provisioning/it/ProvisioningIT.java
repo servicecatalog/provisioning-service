@@ -131,7 +131,7 @@ public class ProvisioningIT {
         @Override
         public ServiceCall<NotUsed, ReleaseStatusResponse> status(String release, String version) {
             return req -> CompletableFuture.completedFuture(new ReleaseStatusResponse("", "",
-                new Info(new Status(ReleaseStatusResponse.DEPLOYED, ""))));
+                new Info(new Status(ReleaseStatusResponse.Info.Status.DEPLOYED, ""))));
         }
     }
 }

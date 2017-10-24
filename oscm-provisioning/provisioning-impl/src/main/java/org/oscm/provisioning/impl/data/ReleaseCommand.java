@@ -15,7 +15,6 @@ import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.lightbend.lagom.javadsl.persistence.PersistentEntity;
 import com.lightbend.lagom.serialization.Jsonable;
-import org.oscm.lagom.data.Failure;
 import org.oscm.provisioning.api.data.ProvisioningRelease;
 
 import java.util.Collections;
@@ -30,7 +29,7 @@ public interface ReleaseCommand extends Jsonable {
 
     String FIELD_RELEASE = "release";
     String FIELD_SERVICES = "endpoints";
-    String FIELD_FAILURE = "failure";
+    String FIELD_REASON = "reason";
 
     /**
      * Installs or updates the release.
@@ -124,26 +123,26 @@ public interface ReleaseCommand extends Jsonable {
     public final class InternalFailRelease
         implements ReleaseCommand, PersistentEntity.ReplyType<Done> {
 
-        private Failure failure;
+        private String reason;
 
         /**
-         * Creates a new fail release command with the given failure.
+         * Creates a new fail release command with the given reason.
          *
-         * @param failure the failure
+         * @param reason the reason the the failure
          */
         @JsonCreator
-        public InternalFailRelease(@JsonProperty(FIELD_FAILURE) Failure failure) {
-            this.failure = failure;
+        public InternalFailRelease(@JsonProperty(FIELD_REASON) String reason) {
+            this.reason = reason;
         }
 
         /**
-         * Gets the occurred failure.
+         * Gets the reason for the failure.
          *
-         * @return the failure
+         * @return the reason
          */
-        @JsonProperty(FIELD_FAILURE)
-        public Failure getFailure() {
-            return failure;
+        @JsonProperty(FIELD_REASON)
+        public String getReason() {
+            return reason;
         }
     }
 

@@ -13,7 +13,6 @@ package org.oscm.provisioning.impl.data;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.lightbend.lagom.serialization.Jsonable;
-import org.oscm.lagom.data.Failure;
 import org.oscm.lagom.data.Identity;
 import org.oscm.provisioning.api.data.ProvisioningRelease;
 
@@ -28,7 +27,7 @@ public final class ReleaseState extends Identity implements Jsonable {
 
     public static final String FIELD_RELEASE = "release";
     public static final String FIELD_STATUS = "status";
-    public static final String FIELD_FAILURE = "failure";
+    public static final String FIELD_REASON = "reason";
     public static final String FIELD_INSTANCE = "instanceId";
     public static final String FIELD_ENDPOINTS = "endpoints";
 
@@ -38,7 +37,7 @@ public final class ReleaseState extends Identity implements Jsonable {
 
     private String instanceId;
 
-    private Failure failure;
+    private String reason;
 
     private Map<String, String> endpoints;
 
@@ -50,7 +49,7 @@ public final class ReleaseState extends Identity implements Jsonable {
      * @param release    the release information, null returns null
      * @param status     the release status, null returns null
      * @param instanceId the instance id of the release, null returns null
-     * @param failure    the current failure that occurred, null returns null
+     * @param reason     the reason for the failure that occurred, null returns null
      * @param endpoints  the available endpoints of the release, null returns empty map
      */
     @JsonCreator
@@ -59,13 +58,13 @@ public final class ReleaseState extends Identity implements Jsonable {
         @JsonProperty(FIELD_RELEASE) Release release,
         @JsonProperty(FIELD_STATUS) ReleaseStatus status,
         @JsonProperty(FIELD_INSTANCE) String instanceId,
-        @JsonProperty(FIELD_FAILURE) Failure failure,
+        @JsonProperty(FIELD_REASON) String reason,
         @JsonProperty(FIELD_ENDPOINTS) Map<String, String> endpoints) {
         super(id, timestamp);
         this.release = release;
         this.status = status;
         this.instanceId = instanceId;
-        this.failure = failure;
+        this.reason = reason;
         this.endpoints = endpoints;
     }
 
@@ -104,9 +103,9 @@ public final class ReleaseState extends Identity implements Jsonable {
      *
      * @return the failure, null if not set
      */
-    @JsonProperty(FIELD_FAILURE)
-    public Failure getFailure() {
-        return failure;
+    @JsonProperty(FIELD_REASON)
+    public String getReason() {
+        return reason;
     }
 
     /**
@@ -207,7 +206,7 @@ public final class ReleaseState extends Identity implements Jsonable {
      */
     public ReleaseState failed(ReleaseEvent.FailedRelease event) {
         return new ReleaseState(event.getId(), event.getTimestamp(), release, ReleaseStatus.FAILED,
-            null, event.getFailure(), null);
+            null, event.getReason(), null);
     }
 
     /**
@@ -218,7 +217,7 @@ public final class ReleaseState extends Identity implements Jsonable {
      */
     public ReleaseState error(ReleaseEvent.ErrorRelease event) {
         return new ReleaseState(event.getId(), event.getTimestamp(), release, ReleaseStatus.ERROR,
-            instanceId, event.getFailure(), endpoints);
+            instanceId, event.getReason(), endpoints);
     }
 
     /**
@@ -250,14 +249,13 @@ public final class ReleaseState extends Identity implements Jsonable {
             return new ProvisioningRelease(getId(),
                 getTimestamp(), release.getTarget(),
                 release.getNamespace(),
-                new ProvisioningRelease.Template(release.getRepository(),
-                    release.getTemplate(), release.getVersion()),
-                release.getLabels(), release.getParameters(),
-                pStatus, failure, instanceId, endpoints);
+                new ProvisioningRelease.Template(release.getRepository(), release.getTemplate(),
+                    release.getVersion()), release.getLabels(), release.getParameters(), pStatus,
+                reason, instanceId, endpoints);
         } else {
             return new ProvisioningRelease(getId(),
-                getTimestamp(), null, null, null, null, null, pStatus, failure,
-                instanceId, endpoints);
+                getTimestamp(), null, null, null, null, null, pStatus, reason, instanceId,
+                endpoints);
         }
     }
 }

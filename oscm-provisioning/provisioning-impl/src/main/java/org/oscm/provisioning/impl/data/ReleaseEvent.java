@@ -17,7 +17,6 @@ import com.lightbend.lagom.javadsl.persistence.AggregateEventShards;
 import com.lightbend.lagom.javadsl.persistence.AggregateEventTag;
 import com.lightbend.lagom.javadsl.persistence.AggregateEventTagger;
 import com.lightbend.lagom.serialization.Jsonable;
-import org.oscm.lagom.data.Failure;
 import org.oscm.lagom.data.Identity;
 
 import java.util.Collections;
@@ -45,7 +44,7 @@ public abstract class ReleaseEvent extends Identity implements Jsonable,
     public static final String FIELD_RELEASE = "release";
     public static final String FIELD_INSTANCE = "instanceId";
     public static final String FIELD_ENDPOINTS = "endpoints";
-    public static final String FIELD_FAILURE = "failure";
+    public static final String FIELD_REASON = "reason";
 
     /**
      * Creates a new release event.
@@ -239,31 +238,31 @@ public abstract class ReleaseEvent extends Identity implements Jsonable,
      */
     public static final class FailedRelease extends ReleaseEvent {
 
-        private Failure failure;
+        private String reason;
 
         /**
          * Creates a new failed event.
          *
          * @param id        the entities id
          * @param timestamp the entities creation timestamp
-         * @param failure   the occurred failure
+         * @param reason    the reason for the failure
          */
         @JsonCreator
         public FailedRelease(@JsonProperty(FIELD_ID) UUID id,
             @JsonProperty(FIELD_TIMESTAMP) Long timestamp,
-            @JsonProperty(FIELD_FAILURE) Failure failure) {
+            @JsonProperty(FIELD_REASON) String reason) {
             super(id, timestamp);
-            this.failure = failure;
+            this.reason = reason;
         }
 
         /**
-         * Gets the occurred failure.
+         * Gets the reason for the failure.
          *
-         * @return the failure
+         * @return the reason
          */
-        @JsonProperty(FIELD_FAILURE)
-        public Failure getFailure() {
-            return failure;
+        @JsonProperty(FIELD_REASON)
+        public String getReason() {
+            return reason;
         }
     }
 
@@ -272,31 +271,31 @@ public abstract class ReleaseEvent extends Identity implements Jsonable,
      */
     public static final class ErrorRelease extends ReleaseEvent {
 
-        private Failure failure;
+        private String reason;
 
         /**
          * Creates a new error event.
          *
          * @param id        the entities id
          * @param timestamp the entities creation timestamp
-         * @param failure   the occurred failure
+         * @param reason    the reason for the failure
          */
         @JsonCreator
         public ErrorRelease(@JsonProperty(FIELD_ID) UUID id,
             @JsonProperty(FIELD_TIMESTAMP) Long timestamp,
-            @JsonProperty(FIELD_FAILURE) Failure failure) {
+            @JsonProperty(FIELD_REASON) String reason) {
             super(id, timestamp);
-            this.failure = failure;
+            this.reason = reason;
         }
 
         /**
-         * Gets the occurred failure.
+         * Gets the reason for the failure.
          *
-         * @return the failure
+         * @return the reason
          */
-        @JsonProperty(FIELD_FAILURE)
-        public Failure getFailure() {
-            return failure;
+        @JsonProperty(FIELD_REASON)
+        public String getReason() {
+            return reason;
         }
     }
 }

@@ -20,8 +20,6 @@ import com.lightbend.lagom.javadsl.api.transport.TransportException;
 import com.lightbend.lagom.javadsl.persistence.*;
 import com.lightbend.lagom.javadsl.persistence.cassandra.CassandraReadSide;
 import com.lightbend.lagom.javadsl.persistence.cassandra.CassandraSession;
-import org.oscm.lagom.enums.Messages;
-import org.oscm.lagom.exceptions.InternalException;
 import org.oscm.lagom.filters.BasicAuthFilter;
 import org.oscm.provisioning.impl.data.*;
 import org.oscm.provisioning.impl.data.ReleaseCommand.*;
@@ -212,10 +210,8 @@ public class ReleaseScheduler {
                         TransportException te = (TransportException) throwable;
 
                         if (te.errorCode() == TransportErrorCode.InternalServerError) {
-                            InternalException ie = new InternalException(
-                                Messages.ERROR_BAD_RESPONSE, te); // TODO replace exception
-
-                            ref.ask(new InternalFailRelease(ie.getAsFailure()));
+                            LOGGER.warn("Rudder: Install failed for " + state.getInstanceId(), te);
+                            ref.ask(new InternalFailRelease(te.getMessage()));
                         }
                     }
 
@@ -248,10 +244,8 @@ public class ReleaseScheduler {
                         TransportException te = (TransportException) throwable;
 
                         if (te.errorCode() == TransportErrorCode.InternalServerError) {
-                            InternalException ie = new InternalException(
-                                Messages.ERROR_BAD_RESPONSE, te); // TODO replace exception
-
-                            ref.ask(new InternalFailRelease(ie.getAsFailure()));
+                            LOGGER.warn("Rudder: Update failed for " + state.getInstanceId(), te);
+                            ref.ask(new InternalFailRelease(te.getMessage()));
                         }
                     }
 
@@ -283,10 +277,8 @@ public class ReleaseScheduler {
                         TransportException te = (TransportException) throwable;
 
                         if (te.errorCode() == TransportErrorCode.InternalServerError) {
-                            InternalException ie = new InternalException(
-                                Messages.ERROR_BAD_RESPONSE, te); // TODO replace exception
-
-                            ref.ask(new InternalFailRelease(ie.getAsFailure()));
+                            LOGGER.warn("Rudder: Delete failed for " + instanceId, te);
+                            ref.ask(new InternalFailRelease(te.getMessage()));
                         }
                     }
 
@@ -329,11 +321,9 @@ public class ReleaseScheduler {
                     case ReleaseStatusResponse.Info.Status.DELETED:
                         return ref.ask(InternalDeleteRelease.INSTANCE);
                     default:
-                        InternalException ie = new InternalException(
-                            Messages.ERROR_BAD_RESPONSE); // TODO replace exception
-
-                        return ref.ask(
-                            new InternalFailRelease(ie.getAsFailure()));
+                        String msg = "Rudder: Unknown status code for " + instanceId;
+                        LOGGER.warn(msg);
+                        return ref.ask(new InternalFailRelease(msg));
                     }
                 })
             .exceptionally(
@@ -342,10 +332,8 @@ public class ReleaseScheduler {
                         TransportException te = (TransportException) throwable;
 
                         if (te.errorCode() == TransportErrorCode.InternalServerError) {
-                            InternalException ie = new InternalException(
-                                Messages.ERROR_BAD_RESPONSE, te); // TODO replace exception
-
-                            ref.ask(new InternalFailRelease(ie.getAsFailure()));
+                            LOGGER.warn("Rudder: Status check failed for " + instanceId, te);
+                            ref.ask(new InternalFailRelease(te.getMessage()));
                         }
                     }
 
@@ -381,9 +369,9 @@ public class ReleaseScheduler {
                     case ReleaseStatusResponse.Info.Status.DELETED:
                         return ref.ask(InternalDeleteRelease.INSTANCE);
                     default:
-                        InternalException ie = new InternalException(
-                            Messages.ERROR_BAD_RESPONSE); // TODO replace exception
-                        return ref.ask(new InternalFailRelease(ie.getAsFailure()));
+                        String msg = "Rudder: Unknown status code for " + instanceId;
+                        LOGGER.warn(msg);
+                        return ref.ask(new InternalFailRelease(msg));
                     }
                 })
             .exceptionally(
@@ -392,10 +380,8 @@ public class ReleaseScheduler {
                         TransportException te = (TransportException) throwable;
 
                         if (te.errorCode() == TransportErrorCode.InternalServerError) {
-                            InternalException ie = new InternalException(
-                                Messages.ERROR_BAD_RESPONSE, te); // TODO replace exception
-
-                            ref.ask(new InternalFailRelease(ie.getAsFailure()));
+                            LOGGER.warn("Rudder: Monitoring failed for " + instanceId, te);
+                            ref.ask(new InternalFailRelease(te.getMessage()));
                         }
                     }
 
